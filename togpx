@@ -1,0 +1,31 @@
+#!/usr/bin/env node
+
+var togpx = require('./'),
+    opt = require('optimist')
+        .usage('Usage: $0 FILE')
+        .boolean('version').describe('version','display software version')
+        .boolean('help').describe('help','print this help message'),
+    argv = opt.argv,
+    fs = require('fs'),
+    concat = require('concat-stream'),
+    pack = require('./package.json');
+
+if (argv.help) {
+    return opt.showHelp();
+}
+if (argv.version) {
+    process.stdout.write(pack.version+'\n');
+    return;
+}
+
+var filename = argv._[0] || '';
+
+(argv._.length ? fs.createReadStream(argv._[0]) : process.stdin).pipe(concat(convert));
+
+function convert(data) {
+    process.stdout.write(
+        togpx(
+            JSON.parse(data)
+        )
+    );
+}
