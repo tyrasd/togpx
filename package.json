@@ -1,0 +1,22 @@
+{
+  "name": "togpx",
+  "version": "0.0.0",
+  "description": "convert geojson to gpx",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tyrasd/togpx.git"
+  },
+  "keywords": [
+    "gpx",
+    "geojson"
+  ],
+  "author": "Martin Raifer",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tyrasd/togpx/issues"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+  }
+}
