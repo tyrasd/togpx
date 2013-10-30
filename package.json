@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "convert geojson to gpx",
   "main": "togpx.js",
+  "scripts": {
+    "test": "mocha -R spec"
+  },
   "bin": {
     "topgx": "togpx"
   },
@@ -25,5 +28,7 @@
     "concat-stream": "~1.0.1"
   },
   "devDependencies": {
+    "expect.js": "~0.2.0",
+    "mocha": "~1.13.0"
   }
 }
