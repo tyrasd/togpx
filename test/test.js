@@ -295,3 +295,106 @@ describe("properties", function () {
   });
 
 });
+
+describe("options", function () {
+
+  it('creator', function() {
+    var geojson, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: []
+    };
+    // creator provided
+    result = togpx(geojson, {creator: "foo bar"});
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.firstChild.getAttribute("creator")).to.eql("foo bar");
+    // default creator
+    result = togpx(geojson, {});
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.firstChild.getAttribute("creator")).to.exist;
+    // explicitely unset creator
+    result = togpx(geojson, {creator: false});
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.firstChild.getAttribute("creator")).to.be.undefined;
+  });
+
+  it('metadata', function() {
+    var geojson, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: []
+    };
+    result = togpx(geojson, {metadata: {foo:"bar"}});
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    var metadata = result.firstChild.getElementsByTagName("metadata");
+    expect(metadata).to.have.length(1);
+    expect(metadata[0].getElementsByTagName("foo")[0].textContent).to.equal("bar");
+  });
+
+  it('featureTitle', function() {
+    var geojson, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "Point",
+          coordinates: [0.0,0.0]
+        }
+      }]
+    };
+    result = togpx(geojson, {featureTitle: function(props) {
+      return "featureTitle";
+    }});
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    var wpt = result.getElementsByTagName("wpt")[0];
+    expect(wpt.getElementsByTagName("name")).to.have.length(1);
+    expect(wpt.getElementsByTagName("name")[0].textContent).to.equal("featureTitle");
+  });
+
+  it('featureDescription', function() {
+    var geojson, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "Point",
+          coordinates: [0.0,0.0]
+        }
+      }]
+    };
+    result = togpx(geojson, {featureDescription: function(props) {
+      return "featureDescription";
+    }});
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    var wpt = result.getElementsByTagName("wpt")[0];
+    expect(wpt.getElementsByTagName("desc")).to.have.length(1);
+    expect(wpt.getElementsByTagName("desc")[0].textContent).to.equal("featureDescription");
+  });
+
+  it('featureLink', function() {
+    var geojson, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "Point",
+          coordinates: [0.0,0.0]
+        }
+      }]
+    };
+    result = togpx(geojson, {featureLink: function(props) {
+      return "http://example.com";
+    }});
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    var wpt = result.getElementsByTagName("wpt")[0];
+    expect(wpt.getElementsByTagName("link")).to.have.length(1);
+    expect(wpt.getElementsByTagName("link")[0].getAttribute("href")).to.equal("http://example.com");
+  });
+
+});
