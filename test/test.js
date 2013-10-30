@@ -227,6 +227,28 @@ describe("properties", function () {
     expect(wpt.getElementsByTagName("name")[0].textContent).to.equal("name");
   });
 
+  it('Name (from tags)', function() {
+    var geojson, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {
+          tags: { name: "name" }
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [0.0,0.0]
+        }
+      }]
+    };
+    result = togpx(geojson);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    var wpt = result.getElementsByTagName("wpt")[0];
+    expect(wpt.getElementsByTagName("name")).to.have.length(1);
+    expect(wpt.getElementsByTagName("name")[0].textContent).to.equal("name");
+  });
+
   it('Description', function() {
     var geojson, result;
     geojson = {
@@ -248,6 +270,28 @@ describe("properties", function () {
     var wpt = result.getElementsByTagName("wpt")[0];
     expect(wpt.getElementsByTagName("desc")).to.have.length(1);
     expect(wpt.getElementsByTagName("desc")[0].textContent).to.equal("p1=foo\np2=bar");
+  });
+
+  it('Description (from tags)', function() {
+    var geojson, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {
+          tags: { name: "name" }
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [0.0,0.0]
+        }
+      }]
+    };
+    result = togpx(geojson);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    var wpt = result.getElementsByTagName("wpt")[0];
+    expect(wpt.getElementsByTagName("desc")).to.have.length(1);
+    expect(wpt.getElementsByTagName("desc")[0].textContent).to.equal("name=name");
   });
 
 });
