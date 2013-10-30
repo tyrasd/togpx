@@ -311,11 +311,12 @@ describe("options", function () {
     // default creator
     result = togpx(geojson, {});
     result = (new DOMParser()).parseFromString(result, 'text/xml');
-    expect(result.firstChild.getAttribute("creator")).to.exist;
+    expect(result.firstChild.getAttribute("creator")).to.be.a("string");
     // explicitely unset creator
     result = togpx(geojson, {creator: false});
     result = (new DOMParser()).parseFromString(result, 'text/xml');
-    expect(result.firstChild.getAttribute("creator")).to.be.undefined;
+    expect(result.firstChild.getAttribute("creator")).to.be(undefined);
+    expect("foo").to.be.undefined;
   });
 
   it('metadata', function() {
