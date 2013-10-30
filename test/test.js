@@ -315,7 +315,7 @@ describe("options", function () {
     // explicitely unset creator
     result = togpx(geojson, {creator: false});
     result = (new DOMParser()).parseFromString(result, 'text/xml');
-    expect(result.firstChild.getAttribute("creator")).to.be(undefined);
+    expect(result.firstChild.getAttribute("creator")).to.not.be.ok();
     expect("foo").to.be.undefined;
   });
 

@@ -4,11 +4,11 @@ if (typeof require !== "undefined") {
 
 function togpx( geojson, options ) {
   options = {
-    creator: (options && options.creator) ? options.creator : "togpx",
-    metadata: (options && options.metadata) ? options.metadata : undefined,
-    featureTitle: (options && options.featureTitle) ? options.featureTitle : get_feature_title,
-    featureDescription: (options && options.featureDescription) ? options.featureDescription : get_feature_description,
-    featureLink: (options && options.featureLink) ? options.featureLink : undefined
+    creator: (options && options.hasOwnProperty("creator")) ? options.creator : "togpx",
+    metadata: (options && options.hasOwnProperty("metadata")) ? options.metadata : undefined,
+    featureTitle: (options && options.hasOwnProperty("featureTitle")) ? options.featureTitle : get_feature_title,
+    featureDescription: (options && options.hasOwnProperty("featureDescription")) ? options.featureDescription : get_feature_description,
+    featureLink: (options && options.hasOwnProperty("featureLink")) ? options.featureLink : undefined
   };
 
   function get_feature_title(props) {
