@@ -41,6 +41,10 @@ function togpx( geojson, options ) {
       res += k+"="+props[k]+"\n";
     return res.substr(0,res.length-1);
   }
+  function add_feature_link(o, f) {
+    if (options.featureLink)
+      o.link = { "@href": options.featureLink(f.properties) }
+  }
   // make gpx object
   var gpx = {"gpx": {
     "@xmlns":"http://www.topografix.com/GPX/1/1",
@@ -65,8 +69,7 @@ function togpx( geojson, options ) {
         "name": options.featureTitle(f.properties),
         "desc": options.featureDescription(f.properties)
       };
-      if (options.featureLink)
-        o.link = { "@href": options.featureLink(f.properties) }
+      add_feature_link(o,f);
       gpx.gpx.wpt.push(o);
       break;
     // LineStrings
@@ -75,8 +78,7 @@ function togpx( geojson, options ) {
         "name": options.featureTitle(f.properties),
         "desc": options.featureDescription(f.properties)
       };
-      if (options.featureLink)
-        o.link = { "@href": options.featureLink(f.properties) }
+      add_feature_link(o,f);
       o.trkseg = {trkpt: []};
       f.geometry.coordinates.forEach(function(c) {
         o.trkseg.trkpt.push({"@lat": c[1], "@lon":c[0]});
@@ -90,8 +92,7 @@ function togpx( geojson, options ) {
         "name": options.featureTitle(f.properties),
         "desc": options.featureDescription(f.properties)
       };
-      if (options.featureLink)
-        o.link = { "@href": options.featureLink(f.properties) }
+      add_feature_link(o,f);
       o.trkseg = [];
       var coords = f.geometry.coordinates;
       if (f.geometry.type == "Polygon") coords = [coords];
