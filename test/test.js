@@ -186,6 +186,25 @@ describe("geometries", function () {
   // todo: simple objects (not Feature)
   // todo: GeometryCollection
 
+  it('ignore unknown', function() {
+    var geojson, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "StrangeGeometry"
+        }
+      }]
+    };
+    result = togpx(geojson);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.getElementsByTagName("wpt")).to.have.length(0);
+    expect(result.getElementsByTagName("trk")).to.have.length(0);
+    expect(result.getElementsByTagName("rte")).to.have.length(0);
+  });
+
 });
 
 describe("properties", function () {
@@ -234,7 +253,28 @@ describe("properties", function () {
       features: [{
         type: "Feature",
         properties: {
-          tags: { name: "name" }
+          tags: { name: "name" },
+          name: "not_name"
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [0.0,0.0]
+        }
+      }]
+    };
+    result = togpx(geojson);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    var wpt = result.getElementsByTagName("wpt")[0];
+    expect(wpt.getElementsByTagName("name")).to.have.length(1);
+    expect(wpt.getElementsByTagName("name")[0].textContent).to.equal("name");
+    // no interesting tags
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {
+          tags: { foo: "bar" },
+          name: "name"
         },
         geometry: {
           type: "Point",
