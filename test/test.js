@@ -187,3 +187,67 @@ describe("geometries", function () {
   // todo: GeometryCollection
 
 });
+
+describe("properties", function () {
+
+  it('Name', function() {
+    var geojson, result, wpt;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [0.0,0.0]
+        }
+      }]
+    };
+    // id property
+    geojson.features[0].properties.id = "id";
+    result = togpx(geojson);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    wpt = result.getElementsByTagName("wpt")[0];
+    expect(wpt.getElementsByTagName("name")).to.have.length(1);
+    expect(wpt.getElementsByTagName("name")[0].textContent).to.equal("id");
+    // ref property
+    geojson.features[0].properties.ref = "ref";
+    result = togpx(geojson);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    wpt = result.getElementsByTagName("wpt")[0];
+    expect(wpt.getElementsByTagName("name")).to.have.length(1);
+    expect(wpt.getElementsByTagName("name")[0].textContent).to.equal("ref");
+    // name property
+    geojson.features[0].properties.name = "name";
+    result = togpx(geojson);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    wpt = result.getElementsByTagName("wpt")[0];
+    expect(wpt.getElementsByTagName("name")).to.have.length(1);
+    expect(wpt.getElementsByTagName("name")[0].textContent).to.equal("name");
+  });
+
+  it('Description', function() {
+    var geojson, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {
+          p1: "foo",
+          p2: "bar"
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [0.0,0.0]
+        }
+      }]
+    };
+    result = togpx(geojson);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    var wpt = result.getElementsByTagName("wpt")[0];
+    expect(wpt.getElementsByTagName("desc")).to.have.length(1);
+    expect(wpt.getElementsByTagName("desc")[0].textContent).to.equal("p1=foo\np2=bar");
+  });
+
+});
