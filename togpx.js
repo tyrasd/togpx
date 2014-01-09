@@ -37,13 +37,15 @@ function togpx( geojson, options ) {
   function get_feature_description(props) {
     // constructs a description for a given feature
     // uses a nested `tags` object or the feature's `properties` if present
-    // and then searchs for the following properties to construct a title:
-    // name, ref, id
+    // and then concatenates all properties to construct a description.
     if (typeof props.tags === "object")
       return get_feature_description(props.tags);
     var res = "";
-    for (var k in props)
+    for (var k in props) {
+      if (typeof props[k] === "object")
+        continue;
       res += k+"="+props[k]+"\n";
+    }
     return res.substr(0,res.length-1);
   }
   function add_feature_link(o, f) {
