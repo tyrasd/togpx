@@ -1,6 +1,4 @@
-if (typeof require !== "undefined") {
-  JXON = require("./jxon.js");
-}
+var JXON = require("jxon");
 
 function togpx( geojson, options ) {
   options = {
@@ -115,4 +113,4 @@ function togpx( geojson, options ) {
   return gpx_str;
 };
 
-if (typeof module !== 'undefined') module.exports = togpx;
+module.exports = togpx;

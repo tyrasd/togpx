@@ -2,7 +2,7 @@
   "name": "togpx",
   "version": "0.1.1",
   "description": "convert geojson to gpx",
-  "main": "togpx.js",
+  "main": "index.js",
   "scripts": {
     "test": "mocha -R spec"
   },
@@ -23,9 +23,10 @@
     "url": "https://github.com/tyrasd/togpx/issues"
   },
   "dependencies": {
-    "xmldom": "~0.1.16",
+    "xmldom": "~0.1.17",
     "optimist": "~0.3.5",
-    "concat-stream": "~1.0.1"
+    "concat-stream": "~1.0.1",
+    "jxon": "~1.0.0"
   },
   "devDependencies": {
     "expect.js": "~0.2.0",
