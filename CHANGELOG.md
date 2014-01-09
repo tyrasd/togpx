@@ -1,3 +1,9 @@
+0.2.0
+-----
+* documentation
+* improve defaule description builder
+* some code outsourcing, refactoring, browserifying
+
 0.1.1
 -----
 * more tests
