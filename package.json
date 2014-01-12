@@ -1,6 +1,6 @@
 {
   "name": "togpx",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "convert geojson to gpx",
   "main": "index.js",
   "scripts": {
