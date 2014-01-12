@@ -64,8 +64,15 @@ function togpx( geojson, options ) {
     gpx.gpx["@creator"] = options.creator;
   if (options.metadata)
     gpx.gpx["metadata"] = options.metadata;
-  // todo: also for non-featurecollections?
-  geojson.features.forEach(function mapFeature(f) {
+  
+  var features;
+  if (geojson.type === "FeatureCollection")
+    features = geojson.features;
+  else if (geojson.type === "Feature")
+    features = [geojson];
+  else
+    features = [{type:"Feature", properties: {}, geometry: geojson}];
+  features.forEach(function mapFeature(f) {
     switch (f.geometry.type) {
     // POIs
     case "Point":

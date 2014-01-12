@@ -6,7 +6,7 @@ if (typeof require !== "undefined") {
 
 describe("geometries", function () {
 
-  it('blank geojson', function() {
+  it('blank FeatureCollection', function() {
     var geojson, result;
     geojson = {
       type: "FeatureCollection",
@@ -19,6 +19,42 @@ describe("geometries", function () {
     expect(result.getElementsByTagName("wpt")).to.have.length(0);
     expect(result.getElementsByTagName("trk")).to.have.length(0);
     expect(result.getElementsByTagName("rte")).to.have.length(0);
+  });
+
+  it('Simple Feature', function() {
+    var geojson, result;
+    geojson = {
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "Point",
+        coordinates: [1.0,2.0]
+      }
+    };
+    result = togpx(geojson);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.getElementsByTagName("wpt")).to.have.length(1);
+    expect(result.getElementsByTagName("trk")).to.have.length(0);
+    expect(result.getElementsByTagName("rte")).to.have.length(0);
+    var wpt = result.getElementsByTagName("wpt")[0];
+    expect(wpt.getAttribute("lat")).to.eql(2.0);
+    expect(wpt.getAttribute("lon")).to.eql(1.0);
+  });
+
+  it('Simple Geometry', function() {
+    var geojson, result;
+    geojson = {
+      type: "Point",
+      coordinates: [1.0,2.0]
+    };
+    result = togpx(geojson);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.getElementsByTagName("wpt")).to.have.length(1);
+    expect(result.getElementsByTagName("trk")).to.have.length(0);
+    expect(result.getElementsByTagName("rte")).to.have.length(0);
+    var wpt = result.getElementsByTagName("wpt")[0];
+    expect(wpt.getAttribute("lat")).to.eql(2.0);
+    expect(wpt.getAttribute("lon")).to.eql(1.0);
   });
 
   it('Point', function() {
@@ -281,9 +317,6 @@ describe("geometries", function () {
     expect(trkpts[1].getAttribute("lon")).to.eql(102.0);
   });
 
-  // todo: simple feature (not FeatureCollection)
-  // todo: simple objects (not Feature)
-
   it('ignore unknown', function() {
     var geojson, result;
     geojson = {
@@ -305,7 +338,6 @@ describe("geometries", function () {
     expect(result.getElementsByTagName("trk")).to.have.length(0);
     expect(result.getElementsByTagName("rte")).to.have.length(0);
   });
-
 });
 
 describe("properties", function () {
