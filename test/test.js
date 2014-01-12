@@ -44,6 +44,32 @@ describe("geometries", function () {
     expect(wpt.getAttribute("lon")).to.eql(1.0);
   });
 
+  it('MultiPoint', function() {
+    var geojson, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "MultiPoint",
+          coordinates: [[1.0,2.0],[3.0,4.0]]
+        }
+      }]
+    };
+    result = togpx(geojson);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.getElementsByTagName("wpt")).to.have.length(2);
+    expect(result.getElementsByTagName("trk")).to.have.length(0);
+    expect(result.getElementsByTagName("rte")).to.have.length(0);
+    var wpt = result.getElementsByTagName("wpt")[0];
+    expect(wpt.getAttribute("lat")).to.eql(2.0);
+    expect(wpt.getAttribute("lon")).to.eql(1.0);
+    wpt = result.getElementsByTagName("wpt")[1];
+    expect(wpt.getAttribute("lat")).to.eql(4.0);
+    expect(wpt.getAttribute("lon")).to.eql(3.0);
+  });
+
   it('LineString', function() {
     var geojson, result;
     geojson = {
@@ -71,6 +97,41 @@ describe("geometries", function () {
     expect(trkpts[0].getAttribute("lon")).to.eql(1.0);
     expect(trkpts[1].getAttribute("lat")).to.eql(4.0);
     expect(trkpts[1].getAttribute("lon")).to.eql(3.0);
+  });
+
+  it('MultiLineString', function() {
+    var geojson, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "MultiLineString",
+          coordinates: [[[1.0,2.0],[3.0,4.0]],[[1.0,1.0],[2.0,2.0]]]
+        }
+      }]
+    };
+    result = togpx(geojson);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.getElementsByTagName("wpt")).to.have.length(0);
+    expect(result.getElementsByTagName("trk")).to.have.length(1);
+    expect(result.getElementsByTagName("rte")).to.have.length(0);
+    var trk = result.getElementsByTagName("trk")[0];
+    var trksegs = trk.getElementsByTagName("trkseg");
+    expect(trksegs).to.have.length(2);
+    var trkpts = trksegs[0].getElementsByTagName("trkpt");
+    expect(trkpts).to.have.length(2);
+    expect(trkpts[0].getAttribute("lat")).to.eql(2.0);
+    expect(trkpts[0].getAttribute("lon")).to.eql(1.0);
+    expect(trkpts[1].getAttribute("lat")).to.eql(4.0);
+    expect(trkpts[1].getAttribute("lon")).to.eql(3.0);
+    trkpts = trksegs[1].getElementsByTagName("trkpt");
+    expect(trkpts).to.have.length(2);
+    expect(trkpts[0].getAttribute("lat")).to.eql(1.0);
+    expect(trkpts[0].getAttribute("lon")).to.eql(1.0);
+    expect(trkpts[1].getAttribute("lat")).to.eql(2.0);
+    expect(trkpts[1].getAttribute("lon")).to.eql(2.0);
   });
 
   it('Polygon (no holes)', function() {
@@ -181,7 +242,6 @@ describe("geometries", function () {
     // skip remaining points, should be ok
   });
 
-  // todo: MultiPoint, MultiLineString
   // todo: simple feature (not FeatureCollection)
   // todo: simple objects (not Feature)
   // todo: GeometryCollection

@@ -69,25 +69,37 @@ function togpx( geojson, options ) {
     switch (f.geometry.type) {
     // POIs
     case "Point":
-      o = {
-        "@lat": f.geometry.coordinates[1],
-        "@lon": f.geometry.coordinates[0],
-        "name": options.featureTitle(f.properties),
-        "desc": options.featureDescription(f.properties)
-      };
-      add_feature_link(o,f);
-      gpx.gpx.wpt.push(o);
+    case "MultiPoint":
+      var coords = f.geometry.coordinates;
+      if (f.geometry.type == "Point") coords = [coords];
+      coords.forEach(function (coordinates) {
+        o = {
+          "@lat": coordinates[1],
+          "@lon": coordinates[0],
+          "name": options.featureTitle(f.properties),
+          "desc": options.featureDescription(f.properties)
+        };
+        add_feature_link(o,f);
+        gpx.gpx.wpt.push(o);
+      });
       break;
     // LineStrings
     case "LineString":
+    case "MultiLineString":
+      var coords = f.geometry.coordinates;
+      if (f.geometry.type == "LineString") coords = [coords];
       o = {
         "name": options.featureTitle(f.properties),
         "desc": options.featureDescription(f.properties)
       };
       add_feature_link(o,f);
-      o.trkseg = {trkpt: []};
-      f.geometry.coordinates.forEach(function(c) {
-        o.trkseg.trkpt.push({"@lat": c[1], "@lon":c[0]});
+      o.trkseg = [];
+      coords.forEach(function(coordinates) {
+        var seg = {trkpt: []};
+        coordinates.forEach(function(c) {
+          seg.trkpt.push({"@lat": c[1], "@lon":c[0]});
+        });
+        o.trkseg.push(seg);
       });
       gpx.gpx.trk.push(o);
       break;
