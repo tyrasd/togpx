@@ -296,7 +296,10 @@ describe("geometries", function () {
         }
       }]
     };
+    /**/ var _consoleLog = console.log;
+    /**/ console.log = function() {};
     result = togpx(geojson);
+    /**/ console.log = _consoleLog;
     result = (new DOMParser()).parseFromString(result, 'text/xml');
     expect(result.getElementsByTagName("wpt")).to.have.length(0);
     expect(result.getElementsByTagName("trk")).to.have.length(0);
