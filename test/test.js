@@ -242,9 +242,47 @@ describe("geometries", function () {
     // skip remaining points, should be ok
   });
 
+  it('GeometryCollection', function() {
+    var geojson, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "GeometryCollection",
+          geometries: [
+            { "type": "Point",
+              "coordinates": [100.0, 0.0]
+              },
+            { "type": "LineString",
+              "coordinates": [ [101.0, 0.0], [102.0, 1.0] ]
+              }
+          ]
+        }
+      }]
+    };
+    result = togpx(geojson);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.getElementsByTagName("wpt")).to.have.length(1);
+    expect(result.getElementsByTagName("trk")).to.have.length(1);
+    expect(result.getElementsByTagName("rte")).to.have.length(0);
+    var wpt = result.getElementsByTagName("wpt")[0];
+    expect(wpt.getAttribute("lat")).to.eql(0.0);
+    expect(wpt.getAttribute("lon")).to.eql(100.0);
+    var trk = result.getElementsByTagName("trk")[0];
+    var trksegs = trk.getElementsByTagName("trkseg");
+    expect(trksegs).to.have.length(1);
+    var trkpts = trksegs[0].getElementsByTagName("trkpt");
+    expect(trkpts).to.have.length(2);
+    expect(trkpts[0].getAttribute("lat")).to.eql(0.0);
+    expect(trkpts[0].getAttribute("lon")).to.eql(101.0);
+    expect(trkpts[1].getAttribute("lat")).to.eql(1.0);
+    expect(trkpts[1].getAttribute("lon")).to.eql(102.0);
+  });
+
   // todo: simple feature (not FeatureCollection)
   // todo: simple objects (not Feature)
-  // todo: GeometryCollection
 
   it('ignore unknown', function() {
     var geojson, result;

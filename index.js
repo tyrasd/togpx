@@ -65,7 +65,7 @@ function togpx( geojson, options ) {
   if (options.metadata)
     gpx.gpx["metadata"] = options.metadata;
   // todo: also for non-featurecollections?
-  geojson.features.forEach(function(f) {
+  geojson.features.forEach(function mapFeature(f) {
     switch (f.geometry.type) {
     // POIs
     case "Point":
@@ -124,6 +124,15 @@ function togpx( geojson, options ) {
         });
       });
       gpx.gpx.trk.push(o);
+      break;
+    case "GeometryCollection":
+      f.geometry.geometries.forEach(function (geometry) {
+        var pseudo_feature = {
+          "properties": f.properties,
+          "geometry": geometry
+        };
+        mapFeature(pseudo_feature);
+      });
       break;
     default:
       console.log("warning: unsupported geometry type: "+f.geometry.type);
