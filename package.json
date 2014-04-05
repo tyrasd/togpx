@@ -1,13 +1,13 @@
 {
   "name": "togpx",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "convert geojson to gpx",
   "main": "index.js",
   "scripts": {
     "test": "mocha -R spec"
   },
   "bin": {
-    "topgx": "togpx"
+    "togpx": "togpx"
   },
   "repository": {
     "type": "git",

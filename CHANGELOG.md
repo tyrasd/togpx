@@ -1,3 +1,7 @@
+0.3.1
+-----
+* fix typo in package.json resulting that the CLI tool binary to be falsely called "topgx" instead of "togpx"
+
 0.3.0
 -----
 * complete GeoJSON support (implements missing MultiPoint, MultiLineString, GeometryCollection, simple Features and simple Geometries)
