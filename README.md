@@ -49,6 +49,5 @@ The conversion from GeoJSON to GPX is (by definition) lossy, because not every G
 * Points are converted to [Waypoints](http://www.topografix.com/gpx/1/1/#type_wptType).
 * Lines are converted to [Tracks](http://www.topografix.com/gpx/1/1/#type_trkType).
 * (Multi)Polygons are represented as a [Track](http://www.topografix.com/gpx/1/1/#type_trkType) of their outline(s).
-
-* The `name` tag of GPX elements will be determined by a simple heuristic that searches for the following GeoJSON properties to construct a meaningful title: `name`, `ref`, `id`
-* The `desc` tag of GPX elements will be constructed by concatenating all GeoJSON properties.
+* By default, the `name` tag of GPX elements will be determined by a simple heuristic that searches for the following GeoJSON properties to construct a meaningful title: `name`, `ref`, `id`
+* By default, the `desc` tag of GPX elements will be constructed by concatenating all respective GeoJSON properties.
