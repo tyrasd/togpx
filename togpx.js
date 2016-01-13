@@ -65,7 +65,7 @@ function togpx( geojson, options ) {
     gpx.gpx["@creator"] = options.creator;
   if (options.metadata)
     gpx.gpx["metadata"] = options.metadata;
-  
+
   var features;
   if (geojson.type === "FeatureCollection")
     features = geojson.features;
@@ -87,6 +87,9 @@ function togpx( geojson, options ) {
           "name": options.featureTitle(f.properties),
           "desc": options.featureDescription(f.properties)
         };
+        if (coordinates[2] !== undefined) {
+          o.ele = coordinates[2];
+        }
         add_feature_link(o,f);
         gpx.gpx.wpt.push(o);
       });
@@ -105,7 +108,14 @@ function togpx( geojson, options ) {
       coords.forEach(function(coordinates) {
         var seg = {trkpt: []};
         coordinates.forEach(function(c) {
-          seg.trkpt.push({"@lat": c[1], "@lon":c[0]});
+          var o = {
+            "@lat": c[1],
+            "@lon":c[0]
+          };
+          if (c[2] !== undefined) {
+            o.ele = c[2];
+          }
+          seg.trkpt.push(o);
         });
         o.trkseg.push(seg);
       });
@@ -126,7 +136,14 @@ function togpx( geojson, options ) {
         poly.forEach(function(ring) {
           var seg = {trkpt: []};
           ring.forEach(function(c) {
-            seg.trkpt.push({"@lat": c[1], "@lon":c[0]});
+            var o = {
+              "@lat": c[1],
+              "@lon":c[0]
+            };
+            if (c[2] !== undefined) {
+              o.ele = c[2];
+            }
+            seg.trkpt.push(o);
           });
           o.trkseg.push(seg);
         });
@@ -264,7 +281,7 @@ var JXON = new (function () {
     if (oParentObj instanceof String || oParentObj instanceof Number || oParentObj instanceof Boolean) {
       oParentEl.appendChild(oXMLDoc.createTextNode(oParentObj.toString())); /* verbosity level is 0 */
     } else if (oParentObj.constructor === Date) {
-      oParentEl.appendChild(oXMLDoc.createTextNode(oParentObj.toGMTString()));    
+      oParentEl.appendChild(oXMLDoc.createTextNode(oParentObj.toGMTString()));
     }
 
     for (var sName in oParentObj) {
@@ -296,10 +313,10 @@ var JXON = new (function () {
 
   this.build = function (oXMLParent, nVerbosity /* optional */, bFreeze /* optional */, bNesteAttributes /* optional */) {
     var _nVerb = arguments.length > 1 && typeof nVerbosity === "number" ? nVerbosity & 3 : /* put here the default verbosity level: */ 1;
-    return createObjTree(oXMLParent, _nVerb, bFreeze || false, arguments.length > 3 ? bNesteAttributes : _nVerb === 3);    
+    return createObjTree(oXMLParent, _nVerb, bFreeze || false, arguments.length > 3 ? bNesteAttributes : _nVerb === 3);
   };
 
-  this.unbuild = function (oObjTree) {    
+  this.unbuild = function (oObjTree) {
     var oNewDoc = document.implementation.createDocument("", "", null);
     loadObjTree(oNewDoc, oNewDoc, oObjTree);
     return oNewDoc;
