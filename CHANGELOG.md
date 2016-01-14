@@ -1,3 +1,7 @@
+0.4.0
+-----
+* output elevation in GPX if GeoJSON has altitude data (#5)
+
 0.3.1
 -----
 * fix typo in package.json resulting that the CLI tool binary to be falsely called "topgx" instead of "togpx"
