@@ -106,6 +106,36 @@ describe("geometries", function () {
     expect(wpt.getAttribute("lon")).to.eql(3.0);
   });
 
+  it('MultiPoint with Elevation', function() {
+    var geojson, result, elevation;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "MultiPoint",
+          coordinates: [[1.0,2.0,3.0],[3.0,4.0,5.0]]
+        }
+      }]
+    };
+    result = togpx(geojson);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.getElementsByTagName("wpt")).to.have.length(2);
+    expect(result.getElementsByTagName("trk")).to.have.length(0);
+    expect(result.getElementsByTagName("rte")).to.have.length(0);
+    var wpt = result.getElementsByTagName("wpt")[0];
+    expect(wpt.getAttribute("lat")).to.eql(2.0);
+    expect(wpt.getAttribute("lon")).to.eql(1.0);
+    elevation = wpt.getElementsByTagName("ele")[0].childNodes[0];
+    expect(elevation.nodeValue).to.eql(3.0);
+    wpt = result.getElementsByTagName("wpt")[1];
+    expect(wpt.getAttribute("lat")).to.eql(4.0);
+    expect(wpt.getAttribute("lon")).to.eql(3.0);
+    elevation = wpt.getElementsByTagName("ele")[0].childNodes[0];
+    expect(elevation.nodeValue).to.eql(5.0);
+  });
+
   it('LineString', function() {
     var geojson, result;
     geojson = {
@@ -133,6 +163,39 @@ describe("geometries", function () {
     expect(trkpts[0].getAttribute("lon")).to.eql(1.0);
     expect(trkpts[1].getAttribute("lat")).to.eql(4.0);
     expect(trkpts[1].getAttribute("lon")).to.eql(3.0);
+  });
+
+  it('LineString with Elevation', function() {
+    var geojson, result, elevation;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "LineString",
+          coordinates: [[1.0,2.0,3.0],[3.0,4.0,5.0]]
+        }
+      }]
+    };
+    result = togpx(geojson);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.getElementsByTagName("wpt")).to.have.length(0);
+    expect(result.getElementsByTagName("trk")).to.have.length(1);
+    expect(result.getElementsByTagName("rte")).to.have.length(0);
+    var trk = result.getElementsByTagName("trk")[0];
+    var trksegs = trk.getElementsByTagName("trkseg");
+    expect(trksegs).to.have.length(1);
+    var trkpts = trksegs[0].getElementsByTagName("trkpt");
+    expect(trkpts).to.have.length(2);
+    expect(trkpts[0].getAttribute("lat")).to.eql(2.0);
+    expect(trkpts[0].getAttribute("lon")).to.eql(1.0);
+    elevation = trkpts[0].getElementsByTagName("ele")[0].childNodes[0];
+    expect(elevation.nodeValue).to.eql(3.0);
+    expect(trkpts[1].getAttribute("lat")).to.eql(4.0);
+    expect(trkpts[1].getAttribute("lon")).to.eql(3.0);
+    elevation = trkpts[1].getElementsByTagName("ele")[0].childNodes[0];
+    expect(elevation.nodeValue).to.eql(5.0);
   });
 
   it('MultiLineString', function() {
@@ -277,6 +340,54 @@ describe("geometries", function () {
     expect(trkpts[0].getAttribute("lon")).to.eql(100.2);
     // skip remaining points, should be ok
   });
+
+    it('MultiPolygon with Elevation', function() {
+      var geojson, result, elevation;
+      geojson = {
+        type: "FeatureCollection",
+        features: [{
+          type: "Feature",
+          properties: {},
+          geometry: {
+            type: "MultiPolygon",
+            coordinates: [
+              [[[102.0, 2.0, 0.0], [103.0, 2.0, 1.0], [103.0, 3.0, 2.0], [102.0, 3.0, 3.0], [102.0, 2.0, 5.0]]],
+              [[[100.0, 0.0, 8.0], [101.0, 0.0, 7.0], [101.0, 1.0, 6.0], [100.0, 1.0, 5.0], [100.0, 0.0, 4.0]],
+               [[100.2, 0.2, 3.0], [100.8, 0.2, 0.0], [100.8, 0.8, 1.0], [100.2, 0.8, 0.0], [100.2, 0.2, 1.0]]]
+            ]
+          }
+        }]
+      };
+      result = togpx(geojson);
+      result = (new DOMParser()).parseFromString(result, 'text/xml');
+      expect(result.getElementsByTagName("wpt")).to.have.length(0);
+      expect(result.getElementsByTagName("trk")).to.have.length(1);
+      expect(result.getElementsByTagName("rte")).to.have.length(0);
+      var trk = result.getElementsByTagName("trk")[0];
+      var trksegs = trk.getElementsByTagName("trkseg");
+      expect(trksegs).to.have.length(3);
+      var trkpts = trksegs[0].getElementsByTagName("trkpt");
+      expect(trkpts).to.have.length(5);
+      expect(trkpts[0].getAttribute("lat")).to.eql(2.0);
+      expect(trkpts[0].getAttribute("lon")).to.eql(102.0);
+      elevation = trkpts[0].getElementsByTagName("ele")[0].childNodes[0];
+      expect(elevation.nodeValue).to.eql(0.0);
+      // skip remaining points, should be ok
+      trkpts = trksegs[1].getElementsByTagName("trkpt");
+      expect(trkpts).to.have.length(5);
+      expect(trkpts[0].getAttribute("lat")).to.eql(0.0);
+      expect(trkpts[0].getAttribute("lon")).to.eql(100.0);
+      elevation = trkpts[0].getElementsByTagName("ele")[0].childNodes[0];
+      expect(elevation.nodeValue).to.eql(8.0);
+      // skip remaining points, should be ok
+      trkpts = trksegs[2].getElementsByTagName("trkpt");
+      expect(trkpts).to.have.length(5);
+      expect(trkpts[0].getAttribute("lat")).to.eql(0.2);
+      expect(trkpts[0].getAttribute("lon")).to.eql(100.2);
+      elevation = trkpts[0].getElementsByTagName("ele")[0].childNodes[0];
+      expect(elevation.nodeValue).to.eql(3.0);
+      // skip remaining points, should be ok
+    });
 
   it('GeometryCollection', function() {
     var geojson, result;

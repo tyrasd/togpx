@@ -64,7 +64,7 @@ function togpx( geojson, options ) {
     gpx.gpx["@creator"] = options.creator;
   if (options.metadata)
     gpx.gpx["metadata"] = options.metadata;
-  
+
   var features;
   if (geojson.type === "FeatureCollection")
     features = geojson.features;
@@ -86,6 +86,9 @@ function togpx( geojson, options ) {
           "name": options.featureTitle(f.properties),
           "desc": options.featureDescription(f.properties)
         };
+        if (coordinates[2] !== undefined) {
+          o.ele = coordinates[2];
+        }
         add_feature_link(o,f);
         gpx.gpx.wpt.push(o);
       });
@@ -104,7 +107,14 @@ function togpx( geojson, options ) {
       coords.forEach(function(coordinates) {
         var seg = {trkpt: []};
         coordinates.forEach(function(c) {
-          seg.trkpt.push({"@lat": c[1], "@lon":c[0]});
+          var o = {
+            "@lat": c[1],
+            "@lon":c[0]
+          };
+          if (c[2] !== undefined) {
+            o.ele = c[2];
+          }
+          seg.trkpt.push(o);
         });
         o.trkseg.push(seg);
       });
@@ -125,7 +135,14 @@ function togpx( geojson, options ) {
         poly.forEach(function(ring) {
           var seg = {trkpt: []};
           ring.forEach(function(c) {
-            seg.trkpt.push({"@lat": c[1], "@lon":c[0]});
+            var o = {
+              "@lat": c[1],
+              "@lon":c[0]
+            };
+            if (c[2] !== undefined) {
+              o.ele = c[2];
+            }
+            seg.trkpt.push(o);
           });
           o.trkseg.push(seg);
         });
