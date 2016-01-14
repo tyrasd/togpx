@@ -51,3 +51,4 @@ The conversion from GeoJSON to GPX is (by definition) lossy, because not every G
 * (Multi)Polygons are represented as a [Track](http://www.topografix.com/gpx/1/1/#type_trkType) of their outline(s).
 * By default, the `name` tag of GPX elements will be determined by a simple heuristic that searches for the following GeoJSON properties to construct a meaningful title: `name`, `ref`, `id`
 * By default, the `desc` tag of GPX elements will be constructed by concatenating all respective GeoJSON properties.
+* Elevation is included in the output if the GeoJSON coordinates contain altitude as a third value (`[lon, lat, altitude]`)
