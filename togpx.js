@@ -78,9 +78,12 @@ function togpx( geojson, options ) {
     // POIs
     case "Point":
     case "MultiPoint":
-      var coords = f.geometry.coordinates;
+      var coords = f.geometry.coordinates
+        , times  = f.geometry.times || []
+        ;
+
       if (f.geometry.type == "Point") coords = [coords];
-      coords.forEach(function (coordinates) {
+      coords.forEach(function (coordinates, index) {
         o = {
           "@lat": coordinates[1],
           "@lon": coordinates[0],
@@ -90,6 +93,9 @@ function togpx( geojson, options ) {
         if (coordinates[2] !== undefined) {
           o.ele = coordinates[2];
         }
+        if (times[index] !== undefined) {
+          o.time = times[index];
+        }
         add_feature_link(o,f);
         gpx.gpx.wpt.push(o);
       });
@@ -97,7 +103,10 @@ function togpx( geojson, options ) {
     // LineStrings
     case "LineString":
     case "MultiLineString":
-      var coords = f.geometry.coordinates;
+      var coords = f.geometry.coordinates
+        , times  = f.geometry.times || []
+        ;
+
       if (f.geometry.type == "LineString") coords = [coords];
       o = {
         "name": options.featureTitle(f.properties),
@@ -107,13 +116,16 @@ function togpx( geojson, options ) {
       o.trkseg = [];
       coords.forEach(function(coordinates) {
         var seg = {trkpt: []};
-        coordinates.forEach(function(c) {
+        coordinates.forEach(function(c, index) {
           var o = {
             "@lat": c[1],
             "@lon":c[0]
           };
           if (c[2] !== undefined) {
             o.ele = c[2];
+          }
+          if (times[index] !== undefined) {
+            o.time = '' + times[index];
           }
           seg.trkpt.push(o);
         });
@@ -130,18 +142,24 @@ function togpx( geojson, options ) {
       };
       add_feature_link(o,f);
       o.trkseg = [];
-      var coords = f.geometry.coordinates;
+      var coords = f.geometry.coordinates
+        , times  = f.geometry.times || []
+        ;
+
       if (f.geometry.type == "Polygon") coords = [coords];
       coords.forEach(function(poly) {
         poly.forEach(function(ring) {
           var seg = {trkpt: []};
-          ring.forEach(function(c) {
+          ring.forEach(function(c, index) {
             var o = {
               "@lat": c[1],
               "@lon":c[0]
             };
             if (c[2] !== undefined) {
               o.ele = c[2];
+            }
+            if (times[index] !== undefined) {
+              o.time = '' + times[index];
             }
             seg.trkpt.push(o);
           });
