@@ -1,4 +1,4 @@
-!function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.togpx=e():"undefined"!=typeof global?global.togpx=e():"undefined"!=typeof self&&(self.togpx=e())}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.togpx = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var JXON = require("jxon");
 
 function togpx( geojson, options ) {
@@ -98,6 +98,7 @@ function togpx( geojson, options ) {
     case "LineString":
     case "MultiLineString":
       var coords = f.geometry.coordinates;
+      var times = f.properties ? f.properties.times : null;
       if (f.geometry.type == "LineString") coords = [coords];
       o = {
         "name": options.featureTitle(f.properties),
@@ -107,13 +108,16 @@ function togpx( geojson, options ) {
       o.trkseg = [];
       coords.forEach(function(coordinates) {
         var seg = {trkpt: []};
-        coordinates.forEach(function(c) {
+        coordinates.forEach(function(c, i) {
           var o = {
             "@lat": c[1],
             "@lon":c[0]
           };
           if (c[2] !== undefined) {
             o.ele = c[2];
+          }
+          if (times && times[i]) {
+            o.time = times[i];
           }
           seg.trkpt.push(o);
         });
@@ -131,10 +135,12 @@ function togpx( geojson, options ) {
       add_feature_link(o,f);
       o.trkseg = [];
       var coords = f.geometry.coordinates;
+      var times = f.properties ? f.properties.times : null;
       if (f.geometry.type == "Polygon") coords = [coords];
       coords.forEach(function(poly) {
         poly.forEach(function(ring) {
           var seg = {trkpt: []};
+          var i = 0;
           ring.forEach(function(c) {
             var o = {
               "@lat": c[1],
@@ -143,6 +149,10 @@ function togpx( geojson, options ) {
             if (c[2] !== undefined) {
               o.ele = c[2];
             }
+            if (times && times[i]) {
+              o.time = times[i];
+            }
+            i++;
             seg.trkpt.push(o);
           });
           o.trkseg.push(seg);
@@ -281,7 +291,7 @@ var JXON = new (function () {
     if (oParentObj instanceof String || oParentObj instanceof Number || oParentObj instanceof Boolean) {
       oParentEl.appendChild(oXMLDoc.createTextNode(oParentObj.toString())); /* verbosity level is 0 */
     } else if (oParentObj.constructor === Date) {
-      oParentEl.appendChild(oXMLDoc.createTextNode(oParentObj.toGMTString()));
+      oParentEl.appendChild(oXMLDoc.createTextNode(oParentObj.toGMTString()));    
     }
 
     for (var sName in oParentObj) {
@@ -313,10 +323,10 @@ var JXON = new (function () {
 
   this.build = function (oXMLParent, nVerbosity /* optional */, bFreeze /* optional */, bNesteAttributes /* optional */) {
     var _nVerb = arguments.length > 1 && typeof nVerbosity === "number" ? nVerbosity & 3 : /* put here the default verbosity level: */ 1;
-    return createObjTree(oXMLParent, _nVerb, bFreeze || false, arguments.length > 3 ? bNesteAttributes : _nVerb === 3);
+    return createObjTree(oXMLParent, _nVerb, bFreeze || false, arguments.length > 3 ? bNesteAttributes : _nVerb === 3);    
   };
 
-  this.unbuild = function (oObjTree) {
+  this.unbuild = function (oObjTree) {    
     var oNewDoc = document.implementation.createDocument("", "", null);
     loadObjTree(oNewDoc, oNewDoc, oObjTree);
     return oNewDoc;
@@ -330,7 +340,5 @@ var JXON = new (function () {
 module.exports = JXON;
 },{"xmldom":3}],3:[function(require,module,exports){
 
-},{}]},{},[1])
-(1)
+},{}]},{},[1])(1)
 });
-;
