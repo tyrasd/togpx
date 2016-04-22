@@ -1,4 +1,5 @@
 var JXON = require("jxon");
+JXON.config({attrPrefix: '@'});
 
 function togpx( geojson, options ) {
   options = (function (defaults, options) {
