@@ -52,3 +52,4 @@ The conversion from GeoJSON to GPX is (by definition) lossy, because not every G
 * By default, the `name` tag of GPX elements will be determined by a simple heuristic that searches for the following GeoJSON properties to construct a meaningful title: `name`, `ref`, `id`
 * By default, the `desc` tag of GPX elements will be constructed by concatenating all respective GeoJSON properties.
 * Elevation is included in the output if the GeoJSON coordinates contain altitude as a third value (`[lon, lat, altitude]`)
+* Timestamps are included in the GPX output if the GeoJSON has a *times* property that is an array of UTC ISO 8601 timestamp strings

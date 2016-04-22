@@ -1,3 +1,7 @@
+0.5.0
+-----
+* support for timestamps by @perliedman
+
 0.4.0
 -----
 * output elevation in GPX if GeoJSON has altitude data (#5)
