@@ -97,6 +97,7 @@ function togpx( geojson, options ) {
     case "LineString":
     case "MultiLineString":
       var coords = f.geometry.coordinates;
+      var times = f.properties ? f.properties.times : null;
       if (f.geometry.type == "LineString") coords = [coords];
       o = {
         "name": options.featureTitle(f.properties),
@@ -106,13 +107,16 @@ function togpx( geojson, options ) {
       o.trkseg = [];
       coords.forEach(function(coordinates) {
         var seg = {trkpt: []};
-        coordinates.forEach(function(c) {
+        coordinates.forEach(function(c, i) {
           var o = {
             "@lat": c[1],
             "@lon":c[0]
           };
           if (c[2] !== undefined) {
             o.ele = c[2];
+          }
+          if (times && times[i]) {
+            o.time = times[i];
           }
           seg.trkpt.push(o);
         });
@@ -130,10 +134,12 @@ function togpx( geojson, options ) {
       add_feature_link(o,f);
       o.trkseg = [];
       var coords = f.geometry.coordinates;
+      var times = f.properties ? f.properties.times : null;
       if (f.geometry.type == "Polygon") coords = [coords];
       coords.forEach(function(poly) {
         poly.forEach(function(ring) {
           var seg = {trkpt: []};
+          var i = 0;
           ring.forEach(function(c) {
             var o = {
               "@lat": c[1],
@@ -142,6 +148,10 @@ function togpx( geojson, options ) {
             if (c[2] !== undefined) {
               o.ele = c[2];
             }
+            if (times && times[i]) {
+              o.time = times[i];
+            }
+            i++;
             seg.trkpt.push(o);
           });
           o.trkseg.push(seg);
