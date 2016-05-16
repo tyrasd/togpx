@@ -13,7 +13,8 @@ function togpx( geojson, options ) {
     metadata: undefined,
     featureTitle: get_feature_title,
     featureDescription: get_feature_description,
-    featureLink: undefined
+    featureLink: undefined,
+    featureCoordTimes: get_feature_coord_times,
   }, options || {});
 
   function get_feature_title(props) {
@@ -48,6 +49,9 @@ function togpx( geojson, options ) {
     }
     return res.substr(0,res.length-1);
   }
+  function get_feature_coord_times(props) {
+    return props.times || props.coordTimes || null;
+  }
   function add_feature_link(o, f) {
     if (options.featureLink)
       o.link = { "@href": options.featureLink(f.properties) }
@@ -74,6 +78,8 @@ function togpx( geojson, options ) {
   else
     features = [{type:"Feature", properties: {}, geometry: geojson}];
   features.forEach(function mapFeature(f) {
+    if (!f.hasOwnProperty('properties'))
+      f.properties = {};
     switch (f.geometry.type) {
     // POIs
     case "Point":
@@ -98,7 +104,7 @@ function togpx( geojson, options ) {
     case "LineString":
     case "MultiLineString":
       var coords = f.geometry.coordinates;
-      var times = f.properties ? f.properties.times || f.properties.coordTimes : null;
+      var times = options.featureCoordTimes(f.properties);
       if (f.geometry.type == "LineString") coords = [coords];
       o = {
         "name": options.featureTitle(f.properties),
@@ -135,7 +141,7 @@ function togpx( geojson, options ) {
       add_feature_link(o,f);
       o.trkseg = [];
       var coords = f.geometry.coordinates;
-      var times = f.properties ? f.properties.times || f.properties.coordTimes : null;
+      var times = options.featureCoordTimes(f.properties);
       if (f.geometry.type == "Polygon") coords = [coords];
       coords.forEach(function(poly) {
         poly.forEach(function(ring) {
