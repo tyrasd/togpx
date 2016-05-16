@@ -98,7 +98,7 @@ function togpx( geojson, options ) {
     case "LineString":
     case "MultiLineString":
       var coords = f.geometry.coordinates;
-      var times = f.properties ? f.properties.times : null;
+      var times = f.properties ? f.properties.times || f.properties.coordTimes : null;
       if (f.geometry.type == "LineString") coords = [coords];
       o = {
         "name": options.featureTitle(f.properties),
@@ -135,7 +135,7 @@ function togpx( geojson, options ) {
       add_feature_link(o,f);
       o.trkseg = [];
       var coords = f.geometry.coordinates;
-      var times = f.properties ? f.properties.times : null;
+      var times = f.properties ? f.properties.times || f.properties.coordTimes : null;
       if (f.geometry.type == "Polygon") coords = [coords];
       coords.forEach(function(poly) {
         poly.forEach(function(ring) {

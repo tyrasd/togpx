@@ -495,6 +495,33 @@ describe("properties", function () {
     expect(pts[1].getElementsByTagName("time")[0].textContent).to.equal("2014-06-23T20:29:11Z");
   });
 
+  it('Time (coordTimes)', function() {
+    var geojson, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {
+          coordTimes: [
+            "2014-06-23T20:29:08Z",
+            "2014-06-23T20:29:11Z",
+          ]
+        },
+        geometry: {
+          type: "LineString",
+          coordinates: [[1.0,2.0],[3.0,4.0]]
+        }
+      }]
+    };
+    result = togpx(geojson);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    var pts = result.getElementsByTagName("trkpt");
+    expect(pts[0].getElementsByTagName("time")).to.have.length(1);
+    expect(pts[0].getElementsByTagName("time")[0].textContent).to.equal("2014-06-23T20:29:08Z");
+    expect(pts[1].getElementsByTagName("time")).to.have.length(1);
+    expect(pts[1].getElementsByTagName("time")[0].textContent).to.equal("2014-06-23T20:29:11Z");
+  });
+
 });
 
 describe("elevation", function () {
