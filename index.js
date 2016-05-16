@@ -14,7 +14,10 @@ function togpx( geojson, options ) {
     featureTitle: get_feature_title,
     featureDescription: get_feature_description,
     featureLink: undefined,
-    featureCoordTimes: get_feature_coord_times,
+    featureCoordTimes: get_feature_coord_times, // provided function should return an array of UTC ISO 8601 timestamp strings
+    "gpx.wpt": true, // include waypoints in output
+    "gpx.trk": true, // include tracks in output
+    "gpx.rte": false, // include routes in output
   }, options || {});
 
   function get_feature_title(props) {
@@ -56,6 +59,13 @@ function togpx( geojson, options ) {
     if (options.featureLink)
       o.link = { "@href": options.featureLink(f.properties) }
   }
+  function defaults(obj1, obj2) {
+    for (var attr in obj2)
+      if (!obj1.hasOwnProperty(attr))
+        obj1[attr] = obj2[attr];
+    return obj1;
+  }
+
   // make gpx object
   var gpx = {"gpx": {
     "@xmlns":"http://www.topografix.com/GPX/1/1",
@@ -64,11 +74,113 @@ function togpx( geojson, options ) {
     "@version":"1.1",
     "wpt": [],
     "trk": [],
+    "rte": [],
   }};
   if (options.creator)
     gpx.gpx["@creator"] = options.creator;
   if (options.metadata)
     gpx.gpx["metadata"] = options.metadata;
+
+  function mapFeature(f, options) {
+    if (!f.hasOwnProperty('properties')) {
+      f.properties = {};
+    }
+    switch (f.geometry.type) {
+    // POIs
+    case "Point":
+    case "MultiPoint":
+      if (options["gpx.wpt"]) { // include waypoints
+        var coords = f.geometry.coordinates;
+        if (f.geometry.type == "Point") coords = [coords];
+        coords.forEach(function (coordinates) {
+          o = {
+            "@lat": coordinates[1],
+            "@lon": coordinates[0],
+            "name": options.featureTitle(f.properties),
+            "desc": options.featureDescription(f.properties)
+          };
+          if (coordinates[2] !== undefined) {
+            o.ele = coordinates[2];
+          }
+          add_feature_link(o,f);
+          gpx.gpx.wpt.push(o);
+        });
+      }
+      break;
+    // LineStrings (tracks / routes)
+    case "LineString":
+    case "MultiLineString":
+    case "Polygon":
+    case "MultiPolygon":
+      var times = options.featureCoordTimes(f.properties);
+      var o = {
+        "name": options.featureTitle(f.properties),
+        "desc": options.featureDescription(f.properties)
+      };
+      add_feature_link(o,f);
+      // Geometry represented uniformly as MultiLineString
+      var coordsLists = (function(geometry) {
+        var coords = geometry.coordinates;
+        switch (geometry.type) {
+          case "LineString":
+            return [coords];
+          case "MultiPolygon":
+            return [].concat.apply([], coords);
+          default:
+            return coords
+        }
+      })(f.geometry);
+      // Point within a track or route
+      function point(c,i) {
+        var o = {
+          "@lat": c[1],
+          "@lon":c[0]
+        };
+        if (c[2] !== undefined) {
+          o.ele = c[2];
+        }
+        if (times && times[i] !== undefined) {
+          o.time = times[i];
+        }
+        return o;
+      }
+      // Create gpx route
+      if (options["gpx.rte"]) { // include route
+        if (coordsLists.length === 1) {  // single route
+          o.rtept = coordsLists[0].map(point);
+          gpx.gpx.rte.push(o);
+        } else { // multiple routes, handled as individual LineString features
+          coordsLists.forEach(function (coords) {
+            var pseudo_feature = {
+              "properties": f.properties,
+              "geometry": {type: "LineString", coordinates: coords}
+            };
+            var recurse_options = defaults({"gpx.trk": false}, options);
+            mapFeature(pseudo_feature, recurse_options);
+          });
+        }
+      }
+      // Create gpx track
+      if(options["gpx.trk"]) { // include track
+        o.trkseg = coordsLists.map(function(coords) {
+          return {"trkpt": coords.map(point)}
+        })
+        gpx.gpx.trk.push(o);
+      }
+      break;
+    case "GeometryCollection":
+      f.geometry.geometries.forEach(function (geometry) {
+        var pseudo_feature = {
+          "properties": f.properties,
+          "geometry": geometry
+        };
+        mapFeature(pseudo_feature, options);
+      });
+      break;
+    default:
+      console.log("warning: unsupported geometry type: "+f.geometry.type);
+    }
+  };
 
   var features;
   if (geojson.type === "FeatureCollection")
@@ -77,108 +189,10 @@ function togpx( geojson, options ) {
     features = [geojson];
   else
     features = [{type:"Feature", properties: {}, geometry: geojson}];
-  features.forEach(function mapFeature(f) {
-    if (!f.hasOwnProperty('properties'))
-      f.properties = {};
-    switch (f.geometry.type) {
-    // POIs
-    case "Point":
-    case "MultiPoint":
-      var coords = f.geometry.coordinates;
-      if (f.geometry.type == "Point") coords = [coords];
-      coords.forEach(function (coordinates) {
-        o = {
-          "@lat": coordinates[1],
-          "@lon": coordinates[0],
-          "name": options.featureTitle(f.properties),
-          "desc": options.featureDescription(f.properties)
-        };
-        if (coordinates[2] !== undefined) {
-          o.ele = coordinates[2];
-        }
-        add_feature_link(o,f);
-        gpx.gpx.wpt.push(o);
-      });
-      break;
-    // LineStrings
-    case "LineString":
-    case "MultiLineString":
-      var coords = f.geometry.coordinates;
-      var times = options.featureCoordTimes(f.properties);
-      if (f.geometry.type == "LineString") coords = [coords];
-      o = {
-        "name": options.featureTitle(f.properties),
-        "desc": options.featureDescription(f.properties)
-      };
-      add_feature_link(o,f);
-      o.trkseg = [];
-      coords.forEach(function(coordinates) {
-        var seg = {trkpt: []};
-        coordinates.forEach(function(c, i) {
-          var o = {
-            "@lat": c[1],
-            "@lon":c[0]
-          };
-          if (c[2] !== undefined) {
-            o.ele = c[2];
-          }
-          if (times && times[i]) {
-            o.time = times[i];
-          }
-          seg.trkpt.push(o);
-        });
-        o.trkseg.push(seg);
-      });
-      gpx.gpx.trk.push(o);
-      break;
-    // Polygons / Multipolygons
-    case "Polygon":
-    case "MultiPolygon":
-      o = {
-        "name": options.featureTitle(f.properties),
-        "desc": options.featureDescription(f.properties)
-      };
-      add_feature_link(o,f);
-      o.trkseg = [];
-      var coords = f.geometry.coordinates;
-      var times = options.featureCoordTimes(f.properties);
-      if (f.geometry.type == "Polygon") coords = [coords];
-      coords.forEach(function(poly) {
-        poly.forEach(function(ring) {
-          var seg = {trkpt: []};
-          var i = 0;
-          ring.forEach(function(c) {
-            var o = {
-              "@lat": c[1],
-              "@lon":c[0]
-            };
-            if (c[2] !== undefined) {
-              o.ele = c[2];
-            }
-            if (times && times[i]) {
-              o.time = times[i];
-            }
-            i++;
-            seg.trkpt.push(o);
-          });
-          o.trkseg.push(seg);
-        });
-      });
-      gpx.gpx.trk.push(o);
-      break;
-    case "GeometryCollection":
-      f.geometry.geometries.forEach(function (geometry) {
-        var pseudo_feature = {
-          "properties": f.properties,
-          "geometry": geometry
-        };
-        mapFeature(pseudo_feature);
-      });
-      break;
-    default:
-      console.log("warning: unsupported geometry type: "+f.geometry.type);
-    }
+  features.forEach(function(f) {
+    mapFeature(f, options);
   });
+
   gpx_str = JXON.stringify(gpx);
   return gpx_str;
 };
