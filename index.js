@@ -13,7 +13,12 @@ function togpx( geojson, options ) {
     metadata: undefined,
     featureTitle: get_feature_title,
     featureDescription: get_feature_description,
-    featureLink: undefined
+    featureLink: undefined,
+    featureCoordTimes: get_feature_coord_times, // provided function should return an array of UTC ISO 8601 timestamp strings
+    transform: {},
+    "gpx.wpt": true, // include waypoints in output
+    "gpx.trk": true, // include tracks in output
+    "gpx.rte": false, // include routes in output
   }, options || {});
 
   function get_feature_title(props) {
@@ -48,117 +53,145 @@ function togpx( geojson, options ) {
     }
     return res.substr(0,res.length-1);
   }
-  function add_feature_link(o, f) {
-    if (options.featureLink)
-      o.link = { "@href": options.featureLink(f.properties) }
+  function get_feature_coord_times(props) {
+    return props.times || props.coordTimes || null;
   }
-  // make gpx object
-  var gpx = {"gpx": {
-    "@xmlns":"http://www.topografix.com/GPX/1/1",
-    "@xmlns:xsi":"http://www.w3.org/2001/XMLSchema-instance",
-    "@xsi:schemaLocation":"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd",
-    "@version":"1.1",
-    "wpt": [],
-    "trk": [],
-  }};
-  if (options.creator)
-    gpx.gpx["@creator"] = options.creator;
-  if (options.metadata)
-    gpx.gpx["metadata"] = options.metadata;
 
-  var features;
-  if (geojson.type === "FeatureCollection")
-    features = geojson.features;
-  else if (geojson.type === "Feature")
-    features = [geojson];
-  else
-    features = [{type:"Feature", properties: {}, geometry: geojson}];
-  features.forEach(function mapFeature(f) {
+  // CREATE GPX DOCUMENT
+
+  // general data shared between: <rte>, <trk> and <wpt>
+  function mkEntity(feature) {
+    var entity = {};
+    entity["name"] = options.featureTitle(feature.properties);
+    entity["desc"] = options.featureDescription(feature.properties);
+    if (options.featureLink)
+      entity["link"] = { "@href": options.featureLink(feature.properties) };
+    return entity;
+  }
+  // general data shared between all types of points: <wpt>, <trkpt>, <rtept>
+  function mkPoint(feature, coord, index) {
+    var pnt = {};
+    pnt["@lat"] = coord[1];
+    pnt["@lon"] = coord[0];
+    if (coord[2] !== undefined) {
+      pnt["ele"] = coord[2];
+    }
+    var times = options.featureCoordTimes(feature.properties);
+    if (times && times[index] !== undefined) {
+      pnt["time"] = times[index];
+    }
+    return pnt;
+  }
+  // way point
+  function mkWpt(feature, coord, index) {
+    var wpt = defaults( mkEntity(feature), mkPoint(feature, coord, index) );
+    return options.transform.wpt && options.transform.wpt(wpt, feature, coord, index) || wpt;
+  }
+  // route point
+  function mkRtept(feature, coord, index) {
+    var rtept = defaults( mkEntity(feature), mkPoint(feature, coord, index) );
+    return options.transform.rtept && options.transform.rtept(rtept, feature, coord, index) || rtept;
+  }
+  // track point
+  function mkTrkpt(feature, coord, index) {
+    var trkpt = defaults( mkEntity(feature), mkPoint(feature, coord, index) );
+    return options.transform.trkpt && options.transform.trkpt(trkpt, feature, coord, index) || trkpt;
+  }
+  // route
+  function mkRte(feature, coords) {
+    var rte = {
+      rtept: coords.map(function(coord, index) {
+        return mkRtept(feature, coord, index);
+      })
+    };
+    return options.transform.rte && options.transform.rte(rte, feature, coords) || rte;
+  }
+  // track
+  function mkTrk(feature, coordsList) {
+     var trk = {
+      "trkseg": coordsList.map(function(coords) {
+        return {
+          "trkpt": coords.map(function(coord, index) {
+            return mkTrkpt(feature, coord, index);
+          })
+        };
+      })
+    };
+    return options.transform.trk && options.transform.trk(trk, feature, coordsList) || trk;
+  }
+  // gpx root element
+  function mkGpx(features) {
+    var gpx = {
+      "@xmlns":"http://www.topografix.com/GPX/1/1",
+      "@xmlns:xsi":"http://www.w3.org/2001/XMLSchema-instance",
+      "@xsi:schemaLocation":"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd",
+      "@version":"1.1",
+      "wpt": [],
+      "trk": [],
+      "rte": []
+    }
+    if (options.creator)
+      gpx["@creator"] = options.creator;
+    if (options.metadata)
+      gpx["metadata"] = options.metadata;
+    features.forEach(function(f) {
+      mapFeature(f, options, gpx);
+    });
+    return options.transform.gpx && options.transform.gpx(gpx, features) || gpx;
+  }
+
+  // extract the entities <rte>, <trk>, and <wpt> from a feature and
+  // push them to the gpx object (last argument)
+  function mapFeature(f, options, gpx) {
+    if (!f.hasOwnProperty('properties')) {
+      f.properties = {};
+    }
     switch (f.geometry.type) {
     // POIs
     case "Point":
     case "MultiPoint":
-      var coords = f.geometry.coordinates;
-      if (f.geometry.type == "Point") coords = [coords];
-      coords.forEach(function (coordinates) {
-        o = {
-          "@lat": coordinates[1],
-          "@lon": coordinates[0],
-          "name": options.featureTitle(f.properties),
-          "desc": options.featureDescription(f.properties)
-        };
-        if (coordinates[2] !== undefined) {
-          o.ele = coordinates[2];
-        }
-        add_feature_link(o,f);
-        gpx.gpx.wpt.push(o);
-      });
+      if (options["gpx.wpt"]) { // include waypoints
+        var coords = f.geometry.coordinates;
+        if (f.geometry.type == "Point") coords = [coords];
+        coords.forEach(function(coord, index) {
+          var wpt = mkWpt(f, coord, index);
+          gpx.wpt.push(wpt);
+        });
+      }
       break;
-    // LineStrings
+    // LineStrings (tracks / routes)
     case "LineString":
     case "MultiLineString":
-      var coords = f.geometry.coordinates;
-      var times = f.properties ? f.properties.times : null;
-      if (f.geometry.type == "LineString") coords = [coords];
-      o = {
-        "name": options.featureTitle(f.properties),
-        "desc": options.featureDescription(f.properties)
-      };
-      add_feature_link(o,f);
-      o.trkseg = [];
-      coords.forEach(function(coordinates) {
-        var seg = {trkpt: []};
-        coordinates.forEach(function(c, i) {
-          var o = {
-            "@lat": c[1],
-            "@lon":c[0]
-          };
-          if (c[2] !== undefined) {
-            o.ele = c[2];
-          }
-          if (times && times[i]) {
-            o.time = times[i];
-          }
-          seg.trkpt.push(o);
-        });
-        o.trkseg.push(seg);
-      });
-      gpx.gpx.trk.push(o);
-      break;
-    // Polygons / Multipolygons
     case "Polygon":
     case "MultiPolygon":
-      o = {
-        "name": options.featureTitle(f.properties),
-        "desc": options.featureDescription(f.properties)
-      };
-      add_feature_link(o,f);
-      o.trkseg = [];
-      var coords = f.geometry.coordinates;
-      var times = f.properties ? f.properties.times : null;
-      if (f.geometry.type == "Polygon") coords = [coords];
-      coords.forEach(function(poly) {
-        poly.forEach(function(ring) {
-          var seg = {trkpt: []};
-          var i = 0;
-          ring.forEach(function(c) {
-            var o = {
-              "@lat": c[1],
-              "@lon":c[0]
+      // Geometry represented uniformly as MultiLineString
+      var coordsLists;
+      switch (f.geometry.type) {
+        case "LineString":   coordsLists = [f.geometry.coordinates]; break;
+        case "MultiPolygon": coordsLists = [].concat.apply([], f.geometry.coordinates); break;
+        default:             coordsLists = f.geometry.coordinates; break;
+      }
+      // Create gpx route
+      if (options["gpx.rte"]) { // include route
+        if (coordsLists.length === 1) {  // single route
+          var rte = mkRte(f, coordsLists[0]);
+          gpx.rte.push(rte);
+        } else { // multiple routes are handled individually using recursive call
+          coordsLists.forEach(function (coords) {
+            var pseudo_feature = {
+              "properties": f.properties,
+              "geometry": {type: "LineString", coordinates: coords}
             };
-            if (c[2] !== undefined) {
-              o.ele = c[2];
-            }
-            if (times && times[i]) {
-              o.time = times[i];
-            }
-            i++;
-            seg.trkpt.push(o);
+            var recurse_options = defaults({"gpx.trk": false}, options);
+            mapFeature(pseudo_feature, recurse_options, gpx);
           });
-          o.trkseg.push(seg);
-        });
-      });
-      gpx.gpx.trk.push(o);
+        }
+      }
+      // Create gpx track
+      if(options["gpx.trk"]) { // include track
+        var trk = mkTrk(f, coordsLists);
+        gpx.trk.push(trk);
+      }
       break;
     case "GeometryCollection":
       f.geometry.geometries.forEach(function (geometry) {
@@ -166,15 +199,34 @@ function togpx( geojson, options ) {
           "properties": f.properties,
           "geometry": geometry
         };
-        mapFeature(pseudo_feature);
+        mapFeature(pseudo_feature, options, gpx);
       });
       break;
     default:
       console.log("warning: unsupported geometry type: "+f.geometry.type);
     }
+  };
+
+  // get features
+  var features;
+  if (geojson.type === "FeatureCollection")
+    features = geojson.features;
+  else if (geojson.type === "Feature")
+    features = [geojson];
+  else
+    features = [{type:"Feature", properties: {}, geometry: geojson}];
+
+  // create gpx document
+  return JXON.stringify({
+    gpx: mkGpx(features)
   });
-  gpx_str = JXON.stringify(gpx);
-  return gpx_str;
 };
+
+function defaults(obj1, obj2) {
+  for (var attr in obj2)
+    if (!obj1.hasOwnProperty(attr))
+      obj1[attr] = obj2[attr];
+  return obj1;
+}
 
 module.exports = togpx;
