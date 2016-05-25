@@ -38,6 +38,7 @@ API
   * `featureTitle`: Defines a callback that is used to construct a title (`<name>`) for a given GeoJSON feature. The callback is called with the GeoJSON feature's `properties` object.
   * `featureDescription`: Defines a callback that is used to construct a description (`<desc>`) for a given GeoJSON feature. The callback is called with the GeoJSON feature's `properties` object.
   * `featureLink`: Defines a callback that is used to construct an URL (`<link>`) for a given GeoJSON feature. The callback is called with the GeoJSON feature's `properties` object.
+  * `featureCoordTimes`: Defines a callback that is called for each feature to determine timestamps of each coordinate. Gets called with the current feature as a parameter, must return an array of UTC ISO 8601 timestamp strings for each coordinate of the feature. Alternatively. this option can be a string, in which case the corresponding feature property is used to read the times array.
 
 The result is a string of GPX XML.
 
@@ -52,4 +53,4 @@ The conversion from GeoJSON to GPX is (by definition) lossy, because not every G
 * By default, the `name` tag of GPX elements will be determined by a simple heuristic that searches for the following GeoJSON properties to construct a meaningful title: `name`, `ref`, `id`
 * By default, the `desc` tag of GPX elements will be constructed by concatenating all respective GeoJSON properties.
 * Elevation is included in the output if the GeoJSON coordinates contain altitude as a third value (`[lon, lat, altitude]`)
-* Timestamps are included in the GPX output if the GeoJSON has a *times* property that is an array of UTC ISO 8601 timestamp strings
+* Timestamps are included in the GPX output if the GeoJSON has a `times` or `coordTimes` property that is an array of UTC ISO 8601 timestamp strings. See the `featureCoordTimes` option for customizing this behaviour.
