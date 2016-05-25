@@ -507,7 +507,7 @@ describe("properties", function () {
         }
       }]
     };
-    result = togpx(geojson, {featureCoordTimes: function(props) {
+    result = togpx(geojson, {featureCoordTimes: function(feature) {
       return [
         "2014-06-23T20:29:08Z",
         "2014-06-23T20:29:11Z",

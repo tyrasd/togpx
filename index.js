@@ -49,8 +49,8 @@ function togpx( geojson, options ) {
     }
     return res.substr(0,res.length-1);
   }
-  function get_feature_coord_times(props) {
-    return props.times || props.coordTimes || null;
+  function get_feature_coord_times(feature) {
+    return feature.properties.times || feature.properties.coordTimes || null;
   }
   function add_feature_link(o, f) {
     if (options.featureLink)
@@ -104,7 +104,7 @@ function togpx( geojson, options ) {
     case "LineString":
     case "MultiLineString":
       var coords = f.geometry.coordinates;
-      var times = options.featureCoordTimes(f.properties);
+      var times = options.featureCoordTimes(f);
       if (f.geometry.type == "LineString") coords = [coords];
       o = {
         "name": options.featureTitle(f.properties),
@@ -141,7 +141,7 @@ function togpx( geojson, options ) {
       add_feature_link(o,f);
       o.trkseg = [];
       var coords = f.geometry.coordinates;
-      var times = options.featureCoordTimes(f.properties);
+      var times = options.featureCoordTimes(f);
       if (f.geometry.type == "Polygon") coords = [coords];
       coords.forEach(function(poly) {
         poly.forEach(function(ring) {
