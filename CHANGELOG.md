@@ -1,3 +1,7 @@
+0.5.2
+-----
+* add callback option to get coordinate times of a feature by @JarnoLeConte
+
 0.5.0
 -----
 * support for timestamps by @perliedman
