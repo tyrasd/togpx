@@ -17,6 +17,14 @@ function togpx( geojson, options ) {
     featureCoordTimes: get_feature_coord_times,
   }, options || {});
 
+  // is featureCoordTimes is a string -> look for the specified property
+  if (typeof options.featureCoordTimes === 'string') {
+    var customTimesFieldKey = options.featureCoordTimes;
+    options.featureCoordTimes = function (feature) {
+      return feature.properties[customTimesFieldKey];
+    }
+  }
+
   function get_feature_title(props) {
     // a simple default heuristic to determine a title for a given feature
     // uses a nested `tags` object or the feature's `properties` if present
