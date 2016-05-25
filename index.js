@@ -30,6 +30,7 @@ function togpx( geojson, options ) {
     // uses a nested `tags` object or the feature's `properties` if present
     // and then searchs for the following properties to construct a title:
     // `name`, `ref`, `id`
+    if (!props) return "";
     if (typeof props.tags === "object") {
       var tags_title = get_feature_title(props.tags);
       if (tags_title !== "")
@@ -47,6 +48,7 @@ function togpx( geojson, options ) {
     // constructs a description for a given feature
     // uses a nested `tags` object or the feature's `properties` if present
     // and then concatenates all properties to construct a description.
+    if (!props) return "";
     if (typeof props.tags === "object")
       return get_feature_description(props.tags);
     var res = "";
@@ -58,6 +60,7 @@ function togpx( geojson, options ) {
     return res.substr(0,res.length-1);
   }
   function get_feature_coord_times(feature) {
+    if (!feature.properties) return null;
     return feature.properties.times || feature.properties.coordTimes || null;
   }
   function add_feature_link(o, f) {
@@ -86,8 +89,6 @@ function togpx( geojson, options ) {
   else
     features = [{type:"Feature", properties: {}, geometry: geojson}];
   features.forEach(function mapFeature(f) {
-    if (!f.hasOwnProperty('properties'))
-      f.properties = {};
     switch (f.geometry.type) {
     // POIs
     case "Point":
