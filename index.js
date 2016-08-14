@@ -73,6 +73,7 @@ function togpx( geojson, options ) {
     "@xmlns:xsi":"http://www.w3.org/2001/XMLSchema-instance",
     "@xsi:schemaLocation":"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd",
     "@version":"1.1",
+    "metadata": null,
     "wpt": [],
     "trk": [],
   }};
@@ -80,6 +81,8 @@ function togpx( geojson, options ) {
     gpx.gpx["@creator"] = options.creator;
   if (options.metadata)
     gpx.gpx["metadata"] = options.metadata;
+  else
+    delete options.metadata;
 
   var features;
   if (geojson.type === "FeatureCollection")

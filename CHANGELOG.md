@@ -1,3 +1,7 @@
+0.5.3
+-----
+* fix ordering of metadata block in output
+
 0.5.2
 -----
 * add callback option to get coordinate times of a feature by @JarnoLeConte
