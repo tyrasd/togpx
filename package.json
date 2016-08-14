@@ -4,7 +4,10 @@
   "description": "convert geojson to gpx",
   "main": "index.js",
   "scripts": {
-    "test": "mocha -R spec"
+    "pretest": "npm ls --depth=Infinity > /dev/null",
+    "test": "npm run test-node && npm run test-webkit",
+    "test-node": "mocha -R spec",
+    "test-webkit": "mocha-phantomjs test/index.html"
   },
   "bin": {
     "togpx": "togpx"
@@ -23,14 +26,15 @@
     "url": "https://github.com/tyrasd/togpx/issues"
   },
   "dependencies": {
-    "xmldom": "~0.1.17",
-    "optimist": "~0.3.5",
     "concat-stream": "~1.0.1",
-    "jxon": "~2.0.0-beta.2"
+    "jxon": "~2.0.0-beta.3",
+    "optimist": "~0.3.5",
+    "xmldom": "~0.1.17"
   },
   "devDependencies": {
     "expect.js": "~0.2.0",
-    "mocha": "~1.13.0"
+    "mocha": "~2.1.0",
+    "mocha-phantomjs": "^4.1.0"
   },
   "browser": {
     "xmldom": false
