@@ -229,7 +229,7 @@ module.exports = togpx;
     // AMD. Register as an anonymous module.
     define([], factory(window));
   } else if (typeof exports === 'object') {
-    if (typeof window === 'object' && window.DOMImplementation) {
+    if (typeof window === 'object' && window.DOMImplementation && window.XMLSerializer && window.DOMParser) {
       // Browserify. hardcode usage of browser's own XMLDom implementation
       // see https://github.com/tyrasd/jxon/issues/18
 
@@ -432,7 +432,10 @@ module.exports = togpx;
       for (var sName in oParentObj) {
 
         vValue = oParentObj[sName];
-        if (vValue === null) {
+        if ( vValue === undefined ) {
+          continue;
+        }
+        if ( vValue === null ) {
           vValue = {};
         }
 
@@ -459,6 +462,7 @@ module.exports = togpx;
           oParentEl.setAttribute(sName.slice(1), vValue);
         } else if (vValue.constructor === Array) {
           for (var nItem in vValue) {
+            if (!vValue.hasOwnProperty(nItem)) continue;
             elementNS = (vValue[nItem] && vValue[nItem][opts.attrPrefix + 'xmlns']) || oParentEl.namespaceURI;
             if (elementNS) {
               oChild = oXMLDoc.createElementNS(elementNS, sName);
@@ -478,11 +482,8 @@ module.exports = togpx;
           }
           if (vValue instanceof Object) {
             loadObjTree(oXMLDoc, oChild, vValue);
-          } else if (vValue !== null && vValue !== true) {
+          } else if (vValue !== null && (vValue !== true || !opts.trueIsEmpty)) {
             oChild.appendChild(oXMLDoc.createTextNode(vValue.toString()));
-          } else if (!opts.trueIsEmpty && vValue === true) {
-            oChild.appendChild(oXMLDoc.createTextNode(vValue.toString()));
-
           }
           oParentEl.appendChild(oChild);
         }

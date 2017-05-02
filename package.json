@@ -1,6 +1,6 @@
 {
   "name": "togpx",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "convert geojson to gpx",
   "main": "index.js",
   "scripts": {
@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "concat-stream": "~1.0.1",
-    "jxon": "~2.0.0-beta.3",
+    "jxon": "~2.0.0-beta.5",
     "optimist": "~0.3.5",
     "xmldom": "~0.1.17"
   },
