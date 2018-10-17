@@ -36,13 +36,7 @@ function togpx( geojson, options ) {
       if (tags_title !== "")
         return tags_title;
     }
-    if (props.name)
-      return props.name;
-    if (props.ref)
-      return props.ref;
-    if (props.id)
-      return props.id;
-    return "";
+    return props.name || props.ref || props.id || "";
   }
   function get_feature_description(props) {
     // constructs a description for a given feature
@@ -63,9 +57,23 @@ function togpx( geojson, options ) {
     if (!feature.properties) return null;
     return feature.properties.times || feature.properties.coordTimes || null;
   }
-  function add_feature_link(o, f) {
+  function add_feature_link(o, props) {
     if (options.featureLink)
-      o.link = { "@href": options.featureLink(f.properties) }
+      o.link = { "@href": options.featureLink(props) };
+  }
+  function make_wpt(coord, time, props) {
+    var pt = {
+      "@lat": coord[1],
+      "@lon": coord[0]
+    };
+    if (coord[2] !== undefined) pt.ele = coord[2];
+    if (time) pt.time = time;
+    if (props !== undefined) {
+      pt.name = options.featureTitle(props);
+      pt.desc = options.featureDescription(props);
+      add_feature_link(pt, props);
+    }
+    return pt;
   }
   // make gpx object
   var gpx = {"gpx": {
@@ -98,18 +106,8 @@ function togpx( geojson, options ) {
     case "MultiPoint":
       var coords = f.geometry.coordinates;
       if (f.geometry.type == "Point") coords = [coords];
-      coords.forEach(function (coordinates) {
-        o = {
-          "@lat": coordinates[1],
-          "@lon": coordinates[0],
-          "name": options.featureTitle(f.properties),
-          "desc": options.featureDescription(f.properties)
-        };
-        if (coordinates[2] !== undefined) {
-          o.ele = coordinates[2];
-        }
-        add_feature_link(o,f);
-        gpx.gpx.wpt.push(o);
+      coords.forEach(function(c) {
+        gpx.gpx.wpt.push(make_wpt(c, undefined, f.properties));
       });
       break;
     // LineStrings
@@ -118,26 +116,16 @@ function togpx( geojson, options ) {
       var coords = f.geometry.coordinates;
       var times = options.featureCoordTimes(f);
       if (f.geometry.type == "LineString") coords = [coords];
-      o = {
+      var o = {
         "name": options.featureTitle(f.properties),
         "desc": options.featureDescription(f.properties)
       };
-      add_feature_link(o,f);
+      add_feature_link(o, f.properties);
       o.trkseg = [];
       coords.forEach(function(coordinates) {
         var seg = {trkpt: []};
         coordinates.forEach(function(c, i) {
-          var o = {
-            "@lat": c[1],
-            "@lon":c[0]
-          };
-          if (c[2] !== undefined) {
-            o.ele = c[2];
-          }
-          if (times && times[i]) {
-            o.time = times[i];
-          }
-          seg.trkpt.push(o);
+          seg.trkpt.push(make_wpt(c, times && times[i]));
         });
         o.trkseg.push(seg);
       });
@@ -146,11 +134,11 @@ function togpx( geojson, options ) {
     // Polygons / Multipolygons
     case "Polygon":
     case "MultiPolygon":
-      o = {
+      var o = {
         "name": options.featureTitle(f.properties),
         "desc": options.featureDescription(f.properties)
       };
-      add_feature_link(o,f);
+      add_feature_link(o, f.properties);
       o.trkseg = [];
       var coords = f.geometry.coordinates;
       var times = options.featureCoordTimes(f);
@@ -160,18 +148,8 @@ function togpx( geojson, options ) {
           var seg = {trkpt: []};
           var i = 0;
           ring.forEach(function(c) {
-            var o = {
-              "@lat": c[1],
-              "@lon":c[0]
-            };
-            if (c[2] !== undefined) {
-              o.ele = c[2];
-            }
-            if (times && times[i]) {
-              o.time = times[i];
-            }
+            seg.trkpt.push(make_wpt(c, times && times[i]));
             i++;
-            seg.trkpt.push(o);
           });
           o.trkseg.push(seg);
         });
@@ -191,8 +169,7 @@ function togpx( geojson, options ) {
       console.log("warning: unsupported geometry type: "+f.geometry.type);
     }
   });
-  gpx_str = JXON.stringify(gpx);
-  return gpx_str;
+  return JXON.stringify(gpx);
 };
 
 module.exports = togpx;
