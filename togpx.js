@@ -70,8 +70,13 @@ function togpx( geojson, options ) {
     if (coord[2] !== undefined) pt.ele = coord[2];
     if (time) pt.time = time;
     if (props !== undefined) {
-      pt.name = options.featureTitle(props);
-      pt.desc = options.featureDescription(props);
+      ["name", "cmt", "desc", "src", "sym", "type"].forEach(function(k) {
+        if (props[k] !== undefined) pt[k] = props[k];
+      });
+      if (pt.name === undefined)
+        pt.name = options.featureTitle(props);
+      if (pt.desc === undefined)
+        pt.desc = options.featureDescription(props);
       add_feature_link(pt, props);
     }
     return pt;
@@ -108,7 +113,9 @@ function togpx( geojson, options ) {
       var coords = f.geometry.coordinates;
       if (f.geometry.type == "Point") coords = [coords];
       coords.forEach(function(c) {
-        gpx.gpx.wpt.push(make_wpt(c, undefined, f.properties));
+        gpx.gpx.wpt.push(
+          make_wpt(c, f.properties && f.properties.time, f.properties)
+        );
       });
       break;
     // LineStrings
