@@ -37,7 +37,7 @@ API
   * `metadata`: An object containing [metadata](http://www.topografix.com/gpx/1/1/#type_metadataType) about the to be converted dataset. Will be included in the GPX in the `<metadata>` tag. Usefull for providing information like `copyright`, `time`, `desc`, etc.
   * `featureTitle`: Defines a callback that is used to construct a title (`<name>`) for a given GeoJSON feature. The callback is called with the GeoJSON feature's `properties` object.
   * `featureDescription`: Defines a callback that is used to construct a description (`<desc>`) for a given GeoJSON feature. The callback is called with the GeoJSON feature's `properties` object.
-  * `featureLink`: Defines a callback that is used to construct an URL (`<link>`) for a given GeoJSON feature. The callback is called with the GeoJSON feature's `properties` object.
+  * `featureLink`: Defines a callback that is used to construct a URL (`<link>`) for a given GeoJSON feature in the absence of a `links` property that contains an array of link objects (containing a `href` and, possibly, `text` and `type`). The callback is called with the GeoJSON feature's `properties` object.
   * `featureCoordTimes`: Defines a callback that is called for each feature to determine timestamps of each coordinate. Gets called with the current feature as a parameter, must return an array of UTC ISO 8601 timestamp strings for each coordinate of the feature. Alternatively. this option can be a string, in which case the corresponding feature property is used to read the times array.
 
 The result is a string of GPX XML.

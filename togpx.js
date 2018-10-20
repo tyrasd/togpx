@@ -59,7 +59,17 @@ function togpx( geojson, options ) {
     return feature.properties.times || feature.properties.coordTimes || null;
   }
   function add_feature_link(o, props) {
-    if (options.featureLink)
+    if (props && props.links instanceof Array) {
+      o.link = [];
+      props.links.forEach(function(l) {
+        if (l.href !== undefined) {
+          var link = { "@href": l.href };
+          if (l.text !== undefined) link.text = l.text;
+          if (l.type !== undefined) link.type = l.type;
+          o.link.push(link);
+        }
+      });
+    } else if (options.featureLink)
       o.link = { "@href": options.featureLink(props) };
   }
   function make_wpt(coord, time, props) {

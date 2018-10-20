@@ -578,6 +578,34 @@ describe("properties", function () {
     expect(wpt.getElementsByTagName("cmt")).to.have.length(1);
     expect(wpt.getElementsByTagName("cmt")[0].textContent).to.equal("comment");
   });
+
+  it('Links', function() {
+    var geojson, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {
+          links: [
+            { href: "http://example.com" },
+            { href: "localhost", text: "link2" }
+          ]
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [0,0]
+        }
+      }]
+    };
+    result = togpx(geojson);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    var links = result.getElementsByTagName("wpt")[0]
+                      .getElementsByTagName("link");
+    expect(links).to.have.length(2);
+    expect(links[0].getAttribute("href")).to.equal("http://example.com");
+    expect(links[1].getAttribute("href")).to.equal("localhost");
+    expect(links[1].getElementsByTagName("text")[0].textContent).to.equal("link2");
+  });
 });
 
 describe("elevation", function () {
