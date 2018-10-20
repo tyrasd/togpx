@@ -82,7 +82,7 @@ function togpx( geojson, options ) {
   if (options.metadata)
     gpx.gpx["metadata"] = options.metadata;
   else
-    delete options.metadata;
+    delete gpx.gpx["metadata"];
 
   var features;
   if (geojson.type === "FeatureCollection")
