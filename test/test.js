@@ -386,8 +386,8 @@ describe("properties", function () {
       features: [{
         type: "Feature",
         properties: {
-          tags: { name: "name" },
-          name: "not_name"
+          tags: { id: "name" },
+          ref: "not_name"
         },
         geometry: {
           type: "Point",
@@ -443,6 +443,13 @@ describe("properties", function () {
     var wpt = result.getElementsByTagName("wpt")[0];
     expect(wpt.getElementsByTagName("desc")).to.have.length(1);
     expect(wpt.getElementsByTagName("desc")[0].textContent).to.equal("p1=foo\np2=bar");
+    // explicitely set description
+    geojson.features[0].properties.desc = "description";
+    result = togpx(geojson);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    wpt = result.getElementsByTagName("wpt")[0];
+    expect(wpt.getElementsByTagName("desc")).to.have.length(1);
+    expect(wpt.getElementsByTagName("desc")[0].textContent).to.equal("description");
   });
 
   it('Description (from tags)', function() {
@@ -548,6 +555,56 @@ describe("properties", function () {
     expect(pts[0].getElementsByTagName("time")[0].textContent).to.equal("2014-06-23T20:29:08Z");
     expect(pts[1].getElementsByTagName("time")).to.have.length(1);
     expect(pts[1].getElementsByTagName("time")[0].textContent).to.equal("2014-06-23T20:29:11Z");
+  });
+
+  it('Comments', function() {
+    var geojson, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {
+          cmt: "comment"
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [1.0,2.0]
+        }
+      }]
+    };
+    result = togpx(geojson);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    var wpt = result.getElementsByTagName("wpt")[0];
+    expect(wpt.getElementsByTagName("cmt")).to.have.length(1);
+    expect(wpt.getElementsByTagName("cmt")[0].textContent).to.equal("comment");
+  });
+
+  it('Links', function() {
+    var geojson, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {
+          links: [
+            { href: "http://example.com" },
+            { href: "localhost", text: "link2" }
+          ]
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [0,0]
+        }
+      }]
+    };
+    result = togpx(geojson);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    var links = result.getElementsByTagName("wpt")[0]
+                      .getElementsByTagName("link");
+    expect(links).to.have.length(2);
+    expect(links[0].getAttribute("href")).to.equal("http://example.com");
+    expect(links[1].getAttribute("href")).to.equal("localhost");
+    expect(links[1].getElementsByTagName("text")[0].textContent).to.equal("link2");
   });
 });
 
