@@ -118,13 +118,14 @@ function togpx( geojson, options ) {
       var coords = f.geometry.coordinates;
       var times = options.featureCoordTimes(f);
       if (f.geometry.type == "LineString") coords = [coords];
+      if (f.geometry.type == "LineString") times = [times];
       o = {
         "name": options.featureTitle(f.properties),
         "desc": options.featureDescription(f.properties)
       };
       add_feature_link(o,f);
       o.trkseg = [];
-      coords.forEach(function(coordinates) {
+      coords.forEach(function(coordinates, si) {
         var seg = {trkpt: []};
         coordinates.forEach(function(c, i) {
           var o = {
@@ -134,8 +135,8 @@ function togpx( geojson, options ) {
           if (c[2] !== undefined) {
             o.ele = c[2];
           }
-          if (times && times[i]) {
-            o.time = times[i];
+          if (times && times[si][i]) {
+            o.time = times[si][i];
           }
           seg.trkpt.push(o);
         });
