@@ -135,8 +135,8 @@ function togpx( geojson, options ) {
           if (c[2] !== undefined) {
             o.ele = c[2];
           }
-          if (times && times[si][i]) {
-            o.time = times[si][i];
+          if (times && times[si]) {
+            if (times[si][i]) o.time = times[si][i];
           }
           seg.trkpt.push(o);
         });
