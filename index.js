@@ -2,13 +2,7 @@ var JXON = require("jxon");
 JXON.config({attrPrefix: '@'});
 
 function togpx( geojson, options ) {
-  options = (function (defaults, options) {
-    for (var k in defaults) {
-      if (options.hasOwnProperty(k))
-        defaults[k] = options[k];
-    }
-    return defaults;
-  })({
+  options = assign({
     creator: "togpx",
     metadata: undefined,
     featureTitle: get_feature_title,
@@ -95,17 +89,17 @@ function togpx( geojson, options ) {
   }
   // way point
   function mkWpt(feature, coord, index) {
-    var wpt = defaults( mkEntity(feature), mkPoint(feature, coord, index) );
+    var wpt = assign( mkEntity(feature), mkPoint(feature, coord, index) );
     return options.transform.wpt && options.transform.wpt(wpt, feature, coord, index) || wpt;
   }
   // route point
   function mkRtept(feature, coord, index) {
-    var rtept = defaults( mkEntity(feature), mkPoint(feature, coord, index) );
+    var rtept = assign( mkEntity(feature), mkPoint(feature, coord, index) );
     return options.transform.rtept && options.transform.rtept(rtept, feature, coord, index) || rtept;
   }
   // track point
   function mkTrkpt(feature, coord, index) {
-    var trkpt = defaults( mkEntity(feature), mkPoint(feature, coord, index) );
+    var trkpt = assign( mkEntity(feature), mkPoint(feature, coord, index) );
     return options.transform.trkpt && options.transform.trkpt(trkpt, feature, coord, index) || trkpt;
   }
   // route
@@ -148,6 +142,7 @@ function togpx( geojson, options ) {
       gpx["metadata"] = options.metadata;
     else
       delete options.metadata;
+
     features.forEach(function(f) {
       mapFeature(f, options, gpx);
     });
@@ -196,7 +191,8 @@ function togpx( geojson, options ) {
               "properties": f.properties,
               "geometry": {type: "LineString", coordinates: coords}
             };
-            var recurse_options = defaults({"gpx.trk": false}, options);
+            var recurse_options = assign({}, options);
+            recurse_options = assign(recurse_options, {"gpx.trk": false});
             mapFeature(pseudo_feature, recurse_options, gpx);
           });
         }
@@ -219,7 +215,7 @@ function togpx( geojson, options ) {
     default:
       console.log("warning: unsupported geometry type: "+f.geometry.type);
     }
-  };
+  }
 
   // get features
   var features;
@@ -234,11 +230,11 @@ function togpx( geojson, options ) {
   return JXON.stringify({
     gpx: mkGpx(features)
   });
-};
+}
 
-function defaults(obj1, obj2) {
+function assign(obj1, obj2) {
   for (var attr in obj2)
-    if (!obj1.hasOwnProperty(attr))
+    if (obj2.hasOwnProperty(attr))
       obj1[attr] = obj2[attr];
   return obj1;
 }
