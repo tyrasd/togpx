@@ -1,21 +1,19 @@
-(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.togpx = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.togpx = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 var JXON = require("jxon");
 JXON.config({attrPrefix: '@'});
 
 function togpx( geojson, options ) {
-  options = (function (defaults, options) {
-    for (var k in defaults) {
-      if (options.hasOwnProperty(k))
-        defaults[k] = options[k];
-    }
-    return defaults;
-  })({
+  options = assign({
     creator: "togpx",
     metadata: undefined,
     featureTitle: get_feature_title,
     featureDescription: get_feature_description,
     featureLink: undefined,
-    featureCoordTimes: get_feature_coord_times,
+    featureCoordTimes: get_feature_coord_times, // provided function should return an array of UTC ISO 8601 timestamp strings
+    transform: {},
+    "gpx.wpt": true, // include waypoints in output
+    "gpx.trk": true, // include tracks in output
+    "gpx.rte": false, // include routes in output
   }, options || {});
 
   // is featureCoordTimes is a string -> look for the specified property
@@ -64,120 +62,147 @@ function togpx( geojson, options ) {
     if (!feature.properties) return null;
     return feature.properties.times || feature.properties.coordTimes || null;
   }
-  function add_feature_link(o, f) {
-    if (options.featureLink)
-      o.link = { "@href": options.featureLink(f.properties) }
-  }
-  // make gpx object
-  var gpx = {"gpx": {
-    "@xmlns":"http://www.topografix.com/GPX/1/1",
-    "@xmlns:xsi":"http://www.w3.org/2001/XMLSchema-instance",
-    "@xsi:schemaLocation":"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd",
-    "@version":"1.1",
-    "metadata": null,
-    "wpt": [],
-    "trk": [],
-  }};
-  if (options.creator)
-    gpx.gpx["@creator"] = options.creator;
-  if (options.metadata)
-    gpx.gpx["metadata"] = options.metadata;
-  else
-    delete options.metadata;
 
-  var features;
-  if (geojson.type === "FeatureCollection")
-    features = geojson.features;
-  else if (geojson.type === "Feature")
-    features = [geojson];
-  else
-    features = [{type:"Feature", properties: {}, geometry: geojson}];
-  features.forEach(function mapFeature(f) {
+  // CREATE GPX DOCUMENT
+
+  // general data shared between: <rte>, <trk> and <wpt>
+  function mkEntity(feature) {
+    var entity = {};
+    entity["name"] = options.featureTitle(feature.properties);
+    entity["desc"] = options.featureDescription(feature.properties);
+    if (options.featureLink)
+      entity["link"] = { "@href": options.featureLink(feature.properties) };
+    return entity;
+  }
+  // general data shared between all types of points: <wpt>, <trkpt>, <rtept>
+  function mkPoint(feature, coord, index) {
+    var pnt = {};
+    pnt["@lat"] = coord[1];
+    pnt["@lon"] = coord[0];
+    if (coord[2] !== undefined) {
+      pnt["ele"] = coord[2];
+    }
+    var times = options.featureCoordTimes(feature);
+    if (times && times[index] !== undefined) {
+      pnt["time"] = times[index];
+    }
+    return pnt;
+  }
+  // way point
+  function mkWpt(feature, coord, index) {
+    var wpt = assign( mkEntity(feature), mkPoint(feature, coord, index) );
+    return options.transform.wpt && options.transform.wpt(wpt, feature, coord, index) || wpt;
+  }
+  // route point
+  function mkRtept(feature, coord, index) {
+    var rtept = mkPoint(feature, coord, index);
+    return options.transform.rtept && options.transform.rtept(rtept, feature, coord, index) || rtept;
+  }
+  // track point
+  function mkTrkpt(feature, coord, index) {
+    var trkpt = mkPoint(feature, coord, index);
+    return options.transform.trkpt && options.transform.trkpt(trkpt, feature, coord, index) || trkpt;
+  }
+  // route
+  function mkRte(feature, coords) {
+    var rte = {
+      rtept: coords.map(function(coord, index) {
+        return mkRtept(feature, coord, index);
+      })
+    };
+    return options.transform.rte && options.transform.rte(rte, feature, coords) || rte;
+  }
+  // track
+  function mkTrk(feature, coordsList) {
+     var trk = {
+      "trkseg": coordsList.map(function(coords) {
+        return {
+          "trkpt": coords.map(function(coord, index) {
+            return mkTrkpt(feature, coord, index);
+          })
+        };
+      })
+    };
+    return options.transform.trk && options.transform.trk(trk, feature, coordsList) || trk;
+  }
+  // gpx root element
+  function mkGpx(features) {
+    var gpx = {
+      "@xmlns":"http://www.topografix.com/GPX/1/1",
+      "@xmlns:xsi":"http://www.w3.org/2001/XMLSchema-instance",
+      "@xsi:schemaLocation":"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd",
+      "@version":"1.1",
+      "metadata": null,
+      "wpt": [],
+      "rte": [],
+      "trk": []
+    }
+    if (options.creator)
+      gpx["@creator"] = options.creator;
+    if (options.metadata)
+      gpx["metadata"] = options.metadata;
+    else
+      delete options.metadata;
+
+    features.forEach(function(f) {
+      mapFeature(f, options, gpx);
+    });
+    return options.transform.gpx && options.transform.gpx(gpx, features) || gpx;
+  }
+
+  // extract the entities <rte>, <trk>, and <wpt> from a feature and
+  // push them to the gpx object (last argument)
+  function mapFeature(f, options, gpx) {
+    if (!f.hasOwnProperty('properties')) {
+      f.properties = {};
+    }
     switch (f.geometry.type) {
     // POIs
     case "Point":
     case "MultiPoint":
-      var coords = f.geometry.coordinates;
-      if (f.geometry.type == "Point") coords = [coords];
-      coords.forEach(function (coordinates) {
-        o = {
-          "@lat": coordinates[1],
-          "@lon": coordinates[0],
-          "name": options.featureTitle(f.properties),
-          "desc": options.featureDescription(f.properties)
-        };
-        if (coordinates[2] !== undefined) {
-          o.ele = coordinates[2];
-        }
-        add_feature_link(o,f);
-        gpx.gpx.wpt.push(o);
-      });
+      if (options["gpx.wpt"]) { // include waypoints
+        var coords = f.geometry.coordinates;
+        if (f.geometry.type == "Point") coords = [coords];
+        coords.forEach(function(coord, index) {
+          var wpt = mkWpt(f, coord, index);
+          gpx.wpt.push(wpt);
+        });
+      }
       break;
-    // LineStrings
+    // LineStrings (tracks / routes)
     case "LineString":
     case "MultiLineString":
-      var coords = f.geometry.coordinates;
-      var times = options.featureCoordTimes(f);
-      if (f.geometry.type == "LineString") coords = [coords];
-      o = {
-        "name": options.featureTitle(f.properties),
-        "desc": options.featureDescription(f.properties)
-      };
-      add_feature_link(o,f);
-      o.trkseg = [];
-      coords.forEach(function(coordinates) {
-        var seg = {trkpt: []};
-        coordinates.forEach(function(c, i) {
-          var o = {
-            "@lat": c[1],
-            "@lon":c[0]
-          };
-          if (c[2] !== undefined) {
-            o.ele = c[2];
-          }
-          if (times && times[i]) {
-            o.time = times[i];
-          }
-          seg.trkpt.push(o);
-        });
-        o.trkseg.push(seg);
-      });
-      gpx.gpx.trk.push(o);
-      break;
-    // Polygons / Multipolygons
     case "Polygon":
     case "MultiPolygon":
-      o = {
-        "name": options.featureTitle(f.properties),
-        "desc": options.featureDescription(f.properties)
-      };
-      add_feature_link(o,f);
-      o.trkseg = [];
-      var coords = f.geometry.coordinates;
-      var times = options.featureCoordTimes(f);
-      if (f.geometry.type == "Polygon") coords = [coords];
-      coords.forEach(function(poly) {
-        poly.forEach(function(ring) {
-          var seg = {trkpt: []};
-          var i = 0;
-          ring.forEach(function(c) {
-            var o = {
-              "@lat": c[1],
-              "@lon":c[0]
+      // Geometry represented uniformly as MultiLineString
+      var coordsLists;
+      switch (f.geometry.type) {
+        case "LineString":   coordsLists = [f.geometry.coordinates]; break;
+        case "MultiPolygon": coordsLists = [].concat.apply([], f.geometry.coordinates); break;
+        default:             coordsLists = f.geometry.coordinates; break;
+      }
+      // Create gpx route
+      if (options["gpx.rte"]) { // include route
+        if (coordsLists.length === 1) {  // single route
+          var rte = mkRte(f, coordsLists[0]);
+          gpx.rte.push(rte);
+        } else { // multiple routes are handled individually using recursive call
+          coordsLists.forEach(function (coords) {
+            var pseudo_feature = {
+              "properties": f.properties,
+              "geometry": {type: "LineString", coordinates: coords}
             };
-            if (c[2] !== undefined) {
-              o.ele = c[2];
-            }
-            if (times && times[i]) {
-              o.time = times[i];
-            }
-            i++;
-            seg.trkpt.push(o);
+            var recurse_options = assign({}, options);
+            recurse_options = assign(recurse_options, {"gpx.trk": false});
+            mapFeature(pseudo_feature, recurse_options, gpx);
           });
-          o.trkseg.push(seg);
-        });
-      });
-      gpx.gpx.trk.push(o);
+        }
+      }
+      // Create gpx track
+      if(options["gpx.trk"]) { // include track
+        var trk = mkTrk(f, coordsLists);
+        gpx.trk.push(trk);
+      }
       break;
     case "GeometryCollection":
       f.geometry.geometries.forEach(function (geometry) {
@@ -185,16 +210,35 @@ function togpx( geojson, options ) {
           "properties": f.properties,
           "geometry": geometry
         };
-        mapFeature(pseudo_feature);
+        mapFeature(pseudo_feature, options, gpx);
       });
       break;
     default:
       console.log("warning: unsupported geometry type: "+f.geometry.type);
     }
+  }
+
+  // get features
+  var features;
+  if (geojson.type === "FeatureCollection")
+    features = geojson.features;
+  else if (geojson.type === "Feature")
+    features = [geojson];
+  else
+    features = [{type:"Feature", properties: {}, geometry: geojson}];
+
+  // create gpx document
+  return JXON.stringify({
+    gpx: mkGpx(features)
   });
-  gpx_str = JXON.stringify(gpx);
-  return gpx_str;
-};
+}
+
+function assign(obj1, obj2) {
+  for (var attr in obj2)
+    if (obj2.hasOwnProperty(attr))
+      obj1[attr] = obj2[attr];
+  return obj1;
+}
 
 module.exports = togpx;
 
@@ -352,27 +396,6 @@ module.exports = togpx;
         vResult = nVerb === 0 ? objectify(vBuiltVal) : {};
       }
 
-      for (var nElId = nLevelStart; nElId < nLevelEnd; nElId++) {
-
-        sProp = aCache[nElId].nodeName;
-        if (opts.lowerCaseTags) {
-          sProp = sProp.toLowerCase();
-        }
-
-        vContent = createObjTree(aCache[nElId], nVerb, bFreeze, bNesteAttr);
-        if (vResult.hasOwnProperty(sProp)) {
-          if (vResult[sProp].constructor !== Array) {
-            vResult[sProp] = [vResult[sProp]];
-          }
-
-          vResult[sProp].push(vContent);
-        } else {
-          vResult[sProp] = vContent;
-
-          nLength++;
-        }
-      }
-
       if (bAttributes) {
         var nAttrLen = oParentNode.attributes.length,
           sAPrefix = bNesteAttr ? '' : opts.attrPrefix,
@@ -402,6 +425,27 @@ module.exports = togpx;
 
       }
 
+      for (var nElId = nLevelStart; nElId < nLevelEnd; nElId++) {
+
+        sProp = aCache[nElId].nodeName;
+        if (opts.lowerCaseTags) {
+          sProp = sProp.toLowerCase();
+        }
+
+        vContent = createObjTree(aCache[nElId], nVerb, bFreeze, bNesteAttr);
+        if (vResult.hasOwnProperty(sProp)) {
+          if (vResult[sProp].constructor !== Array) {
+            vResult[sProp] = [vResult[sProp]];
+          }
+
+          vResult[sProp].push(vContent);
+        } else {
+          vResult[sProp] = vContent;
+
+          nLength++;
+        }
+      }
+
       if (nVerb === 3 || (nVerb === 2 || nVerb === 1 && nLength > 0) && sCollectedTxt) {
         vResult[opts.valueKey] = vBuiltVal;
       } else if (!bHighVerb && nLength === 0 && sCollectedTxt) {
@@ -415,10 +459,47 @@ module.exports = togpx;
 
       return vResult;
     }
+
+    function getElementNS(sName, vValue, oParentEl) {
+      var xmlns = opts.attrPrefix + 'xmlns',
+        isObject = vValue && vValue instanceof Object,
+        elementNS, 
+        prefix;
+
+      if (sName.indexOf(':') !== -1) {
+        prefix = sName.split(':')[0];
+
+        if (isObject) {
+          elementNS = vValue[xmlns + ':' + prefix];
+          if (elementNS) return elementNS;
+        }
+  
+        elementNS = oParentEl.lookupNamespaceURI(prefix);
+        if (elementNS) return elementNS;
+      } 
+      if (isObject) {
+        elementNS = vValue[xmlns];
+      }
+
+      return elementNS || oParentEl.lookupNamespaceURI(null);
+    }
+
+    function createElement(sName, vValue, oParentEl, oXMLDoc) {
+      var elementNS = getElementNS(sName, vValue, oParentEl),
+        element;        
+
+      if (elementNS) {
+        element = oXMLDoc.createElementNS(elementNS, sName);
+      } else {
+        element = oXMLDoc.createElement(sName);
+      }
+
+      return element;
+    }
+
     function loadObjTree(oXMLDoc, oParentEl, oParentObj) {
       var vValue,
-        oChild,
-        elementNS;
+        oChild;
 
       if (oParentObj.constructor === String || oParentObj.constructor === Number || oParentObj.constructor === Boolean) {
         oParentEl.appendChild(oXMLDoc.createTextNode(oParentObj.toString())); /* verbosity level is 0 or 1 */
@@ -453,39 +534,27 @@ module.exports = togpx;
           for (var sAttrib in vValue) {
             oParentEl.setAttribute(sAttrib, vValue[sAttrib]);
           }
-        } else if (sName === opts.attrPrefix + 'xmlns') {
-          if (isNodeJs) {
-            oParentEl.setAttribute(sName.slice(1), vValue);
-          }
-        // do nothing: special handling of xml namespaces is done via createElementNS()
+        } else if (sName.indexOf(opts.attrPrefix + 'xmlns') === 0) {
+          // explicitly set xmlns and xmlns:* attributes, so they can be set anywhere in the tag hierarchy
+          oParentEl.setAttributeNS('http://www.w3.org/2000/xmlns/', sName.slice(1), vValue);
         } else if (sName.charAt(0) === opts.attrPrefix) {
           oParentEl.setAttribute(sName.slice(1), vValue);
         } else if (vValue.constructor === Array) {
           for (var nItem in vValue) {
             if (!vValue.hasOwnProperty(nItem)) continue;
-            elementNS = (vValue[nItem] && vValue[nItem][opts.attrPrefix + 'xmlns']) || oParentEl.namespaceURI;
-            if (elementNS) {
-              oChild = oXMLDoc.createElementNS(elementNS, sName);
-            } else {
-              oChild = oXMLDoc.createElement(sName);
-            }
+            oChild = createElement(sName, vValue[nItem], oParentEl, oXMLDoc);
+            oParentEl.appendChild(oChild);
 
             loadObjTree(oXMLDoc, oChild, vValue[nItem] || {});
-            oParentEl.appendChild(oChild);
           }
         } else {
-          elementNS = (vValue || {})[opts.attrPrefix + 'xmlns'] || oParentEl.namespaceURI;
-          if (elementNS) {
-            oChild = oXMLDoc.createElementNS(elementNS, sName);
-          } else {
-            oChild = oXMLDoc.createElement(sName);
-          }
+          oChild = createElement(sName, vValue, oParentEl, oXMLDoc);
+          oParentEl.appendChild(oChild);
           if (vValue instanceof Object) {
             loadObjTree(oXMLDoc, oChild, vValue);
           } else if (vValue !== null && (vValue !== true || !opts.trueIsEmpty)) {
             oChild.appendChild(oXMLDoc.createTextNode(vValue.toString()));
           }
-          oParentEl.appendChild(oChild);
         }
       }
     }

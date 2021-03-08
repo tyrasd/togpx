@@ -133,8 +133,8 @@ function togpx( geojson, options ) {
       "@version":"1.1",
       "metadata": null,
       "wpt": [],
-      "trk": [],
-      "rte": []
+      "rte": [],
+      "trk": []
     }
     if (options.creator)
       gpx["@creator"] = options.creator;
