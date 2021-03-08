@@ -340,6 +340,237 @@ describe("geometries", function () {
   });
 });
 
+describe("routes", function () {
+
+
+  it('LineString', function() {
+    var geojson, options, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "LineString",
+          coordinates: [[1.0,2.0],[3.0,4.0]]
+        }
+      }]
+    };
+    options = {
+      "gpx.rte": true,
+      "gpx.trk": false,
+    }
+    result = togpx(geojson, options);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.getElementsByTagName("wpt")).to.have.length(0);
+    expect(result.getElementsByTagName("trk")).to.have.length(0);
+    expect(result.getElementsByTagName("rte")).to.have.length(1);
+    var rte = result.getElementsByTagName("rte")[0];
+    var rtepts = rte.getElementsByTagName("rtept");
+    expect(rtepts).to.have.length(2);
+    expect(rtepts[0].getAttribute("lat")).to.eql(2.0);
+    expect(rtepts[0].getAttribute("lon")).to.eql(1.0);
+    expect(rtepts[1].getAttribute("lat")).to.eql(4.0);
+    expect(rtepts[1].getAttribute("lon")).to.eql(3.0);
+  });
+
+  it('MultiLineString', function() {
+    var geojson, options, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "MultiLineString",
+          coordinates: [[[1.0,2.0],[3.0,4.0]],[[1.0,1.0],[2.0,2.0]]]
+        }
+      }]
+    };
+    options = {
+      "gpx.rte": true,
+      "gpx.trk": false,
+    }
+    result = togpx(geojson, options);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.getElementsByTagName("wpt")).to.have.length(0);
+    expect(result.getElementsByTagName("trk")).to.have.length(0);
+    expect(result.getElementsByTagName("rte")).to.have.length(2);
+    var rtes = result.getElementsByTagName("rte");
+    var rtepts = rtes[0].getElementsByTagName("rtept");
+    expect(rtepts).to.have.length(2);
+    expect(rtepts[0].getAttribute("lat")).to.eql(2.0);
+    expect(rtepts[0].getAttribute("lon")).to.eql(1.0);
+    expect(rtepts[1].getAttribute("lat")).to.eql(4.0);
+    expect(rtepts[1].getAttribute("lon")).to.eql(3.0);
+    rtepts = rtes[1].getElementsByTagName("rtept");
+    expect(rtepts).to.have.length(2);
+    expect(rtepts[0].getAttribute("lat")).to.eql(1.0);
+    expect(rtepts[0].getAttribute("lon")).to.eql(1.0);
+    expect(rtepts[1].getAttribute("lat")).to.eql(2.0);
+    expect(rtepts[1].getAttribute("lon")).to.eql(2.0);
+  });
+
+  it('Polygon (no holes)', function() {
+    var geojson, options, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [ [100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [100.0, 0.0] ]
+          ]
+        }
+      }]
+    };
+    options = {
+      "gpx.rte": true,
+      "gpx.trk": false,
+    }
+    result = togpx(geojson, options);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.getElementsByTagName("wpt")).to.have.length(0);
+    expect(result.getElementsByTagName("trk")).to.have.length(0);
+    expect(result.getElementsByTagName("rte")).to.have.length(1);
+    var rtes = result.getElementsByTagName("rte");
+    expect(rtes).to.have.length(1);
+    var rtepts = rtes[0].getElementsByTagName("rtept");
+    expect(rtepts).to.have.length(5);
+    expect(rtepts[0].getAttribute("lat")).to.eql(0.0);
+    expect(rtepts[0].getAttribute("lon")).to.eql(100.0);
+    // skip remaining points, should be ok
+  });
+
+  it('Polygon (with hole)', function() {
+    var geojson, options, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [ [100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [100.0, 0.0] ],
+            [ [100.2, 0.2], [100.8, 0.2], [100.8, 0.8], [100.2, 0.8], [100.2, 0.2] ]
+          ]
+        }
+      }]
+    };
+    options = {
+      "gpx.rte": true,
+      "gpx.trk": false,
+    }
+    result = togpx(geojson, options);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.getElementsByTagName("wpt")).to.have.length(0);
+    expect(result.getElementsByTagName("trk")).to.have.length(0);
+    expect(result.getElementsByTagName("rte")).to.have.length(2);
+    var rtes = result.getElementsByTagName("rte");
+    expect(rtes).to.have.length(2);
+    var rtepts = rtes[0].getElementsByTagName("rtept");
+    expect(rtepts).to.have.length(5);
+    expect(rtepts[0].getAttribute("lat")).to.eql(0.0);
+    expect(rtepts[0].getAttribute("lon")).to.eql(100.0);
+    // skip remaining points, should be ok
+    rtepts = rtes[1].getElementsByTagName("rtept");
+    expect(rtepts).to.have.length(5);
+    expect(rtepts[0].getAttribute("lat")).to.eql(0.2);
+    expect(rtepts[0].getAttribute("lon")).to.eql(100.2);
+    // skip remaining points, should be ok
+  });
+
+  it('MultiPolygon', function() {
+    var geojson, options, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "MultiPolygon",
+          coordinates: [
+            [[[102.0, 2.0], [103.0, 2.0], [103.0, 3.0], [102.0, 3.0], [102.0, 2.0]]],
+            [[[100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [100.0, 0.0]],
+             [[100.2, 0.2], [100.8, 0.2], [100.8, 0.8], [100.2, 0.8], [100.2, 0.2]]]
+          ]
+        }
+      }]
+    };
+    options = {
+      "gpx.rte": true,
+      "gpx.trk": false,
+    }
+    result = togpx(geojson, options);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.getElementsByTagName("wpt")).to.have.length(0);
+    expect(result.getElementsByTagName("trk")).to.have.length(0);
+    expect(result.getElementsByTagName("rte")).to.have.length(3);
+    var rtes = result.getElementsByTagName("rte");
+    expect(rtes).to.have.length(3);
+    var rtepts = rtes[0].getElementsByTagName("rtept");
+    expect(rtepts).to.have.length(5);
+    expect(rtepts[0].getAttribute("lat")).to.eql(2.0);
+    expect(rtepts[0].getAttribute("lon")).to.eql(102.0);
+    // skip remaining points, should be ok
+    rtepts = rtes[1].getElementsByTagName("rtept");
+    expect(rtepts).to.have.length(5);
+    expect(rtepts[0].getAttribute("lat")).to.eql(0.0);
+    expect(rtepts[0].getAttribute("lon")).to.eql(100.0);
+    // skip remaining points, should be ok
+    rtepts = rtes[2].getElementsByTagName("rtept");
+    expect(rtepts).to.have.length(5);
+    expect(rtepts[0].getAttribute("lat")).to.eql(0.2);
+    expect(rtepts[0].getAttribute("lon")).to.eql(100.2);
+    // skip remaining points, should be ok
+  });
+
+  it('GeometryCollection', function() {
+    var geojson, options, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "GeometryCollection",
+          geometries: [
+            { "type": "Point",
+              "coordinates": [100.0, 0.0]
+              },
+            { "type": "LineString",
+              "coordinates": [ [101.0, 0.0], [102.0, 1.0] ]
+              }
+          ]
+        }
+      }]
+    };
+    options = {
+      "gpx.rte": true,
+      "gpx.trk": false,
+    }
+    result = togpx(geojson, options);
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.getElementsByTagName("wpt")).to.have.length(1);
+    expect(result.getElementsByTagName("trk")).to.have.length(0);
+    expect(result.getElementsByTagName("rte")).to.have.length(1);
+    var wpt = result.getElementsByTagName("wpt")[0];
+    expect(wpt.getAttribute("lat")).to.eql(0.0);
+    expect(wpt.getAttribute("lon")).to.eql(100.0);
+    var rtes = result.getElementsByTagName("rte");
+    expect(rtes).to.have.length(1);
+    var rtepts = rtes[0].getElementsByTagName("rtept");
+    expect(rtepts).to.have.length(2);
+    expect(rtepts[0].getAttribute("lat")).to.eql(0.0);
+    expect(rtepts[0].getAttribute("lon")).to.eql(101.0);
+    expect(rtepts[1].getAttribute("lat")).to.eql(1.0);
+    expect(rtepts[1].getAttribute("lon")).to.eql(102.0);
+  });
+})
+
 describe("properties", function () {
 
   it('Name', function() {
@@ -745,6 +976,197 @@ describe("options", function () {
     var wpt = result.getElementsByTagName("wpt")[0];
     expect(wpt.getElementsByTagName("link")).to.have.length(1);
     expect(wpt.getElementsByTagName("link")[0].getAttribute("href")).to.equal("http://example.com");
+  });
+
+  it('gpx.{wpt|trk|rte}', function() {
+    var geojson, result;
+    geojson = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "GeometryCollection",
+          geometries: [
+            { "type": "MultiPoint",
+              "coordinates": [ [31.0, 0.0], [32.0, 0.0] ]
+              },
+            { "type": "MultiLineString",
+              "coordinates": [ [[101.0, 0.0], [102.0, 1.0]], [[103.0, 0.0], [104.0, 1.0]] ]
+              }
+          ]
+        }
+      }]
+    };
+    result = togpx(geojson, {"gpx.wpt": false, "gpx.rte": false, "gpx.trk": false});
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.getElementsByTagName("wpt")).to.have.length(0);
+    expect(result.getElementsByTagName("trk")).to.have.length(0);
+    expect(result.getElementsByTagName("rte")).to.have.length(0);
+    result = togpx(geojson, {"gpx.wpt": true, "gpx.rte": false, "gpx.trk": false});
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.getElementsByTagName("wpt")).to.have.length(2);
+    expect(result.getElementsByTagName("trk")).to.have.length(0);
+    expect(result.getElementsByTagName("rte")).to.have.length(0);
+    result = togpx(geojson, {"gpx.wpt": false, "gpx.rte": true, "gpx.trk": false});
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.getElementsByTagName("wpt")).to.have.length(0);
+    expect(result.getElementsByTagName("trk")).to.have.length(0);
+    expect(result.getElementsByTagName("rte")).to.have.length(2);
+    result = togpx(geojson, {"gpx.wpt": false, "gpx.rte": false, "gpx.trk": true});
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.getElementsByTagName("wpt")).to.have.length(0);
+    expect(result.getElementsByTagName("trk")).to.have.length(1);
+    expect(result.getElementsByTagName("rte")).to.have.length(0);
+    result = togpx(geojson, {"gpx.wpt": true, "gpx.rte": true, "gpx.trk": true});
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    expect(result.getElementsByTagName("wpt")).to.have.length(2);
+    expect(result.getElementsByTagName("trk")).to.have.length(1);
+    expect(result.getElementsByTagName("rte")).to.have.length(2);
+  });
+
+});
+
+
+describe("tranformers", function () {
+
+  function pointTransformer(pnt, feature, coord, index) {
+    pnt.name = feature.properties.names[index];
+    pnt.extensions = [{
+      lat: coord[1],
+      lon: coord[0]
+    }];
+  }
+
+  var geojsonPoint = {
+    type: "FeatureCollection",
+    features: [{
+      type: "Feature",
+      properties: {
+        names: ["pnt1", "pnt2"]
+      },
+      geometry: {
+        type: "GeometryCollection",
+        geometries: [
+          { "type": "MultiPoint",
+            "coordinates": [ [31.0, 0.0], [32.0, 0.0] ]
+            },
+          { "type": "MultiLineString",
+            "coordinates": [ [[101.0, 0.0], [102.0, 1.0]], [[103.0, 0.0], [104.0, 1.0]] ]
+            }
+        ]
+      }
+    }]
+  };
+
+  it('wpt', function() {
+    var result;
+    result = togpx(geojsonPoint, {
+      transform: {
+        wpt: pointTransformer
+      }
+    });
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    var wpts = result.getElementsByTagName("wpt");
+    var ext = wpts[0].getElementsByTagName("extensions")[0];
+    expect(wpts[0].getElementsByTagName("name")[0].textContent).to.eql('pnt1');
+    expect(wpts[1].getElementsByTagName("name")[0].textContent).to.eql('pnt2');
+    expect(ext.getElementsByTagName("lat")[0].textContent).to.eql(0.0);
+    expect(ext.getElementsByTagName("lon")[0].textContent).to.eql(31.0);
+  });
+
+  it('rtept', function() {
+    var result;
+    result = togpx(geojsonPoint, {
+      transform: {
+        rtept: pointTransformer
+      },
+      "gpx.rte": true,
+    });
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    var rte = result.getElementsByTagName("rte")[0];
+    var rtepts = rte.getElementsByTagName("rtept");
+    var ext = rtepts[0].getElementsByTagName("extensions")[0];
+    expect(rtepts[0].getElementsByTagName("name")[0].textContent).to.eql('pnt1');
+    expect(rtepts[1].getElementsByTagName("name")[0].textContent).to.eql('pnt2');
+    expect(ext.getElementsByTagName("lat")[0].textContent).to.eql(0.0);
+    expect(ext.getElementsByTagName("lon")[0].textContent).to.eql(101.0);
+  });
+
+  it('trkpt', function() {
+    var result;
+    result = togpx(geojsonPoint, {
+      transform: {
+        trkpt: pointTransformer
+      }
+    });
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    var trk = result.getElementsByTagName("trk")[0];
+    var trkpts = trk.getElementsByTagName("trkpt");
+    var ext = trkpts[0].getElementsByTagName("extensions")[0];
+    expect(trkpts[0].getElementsByTagName("name")[0].textContent).to.eql('pnt1');
+    expect(trkpts[1].getElementsByTagName("name")[0].textContent).to.eql('pnt2');
+    expect(ext.getElementsByTagName("lat")[0].textContent).to.eql(0.0);
+    expect(ext.getElementsByTagName("lon")[0].textContent).to.eql(101.0);
+  });
+
+  it('rte', function() {
+    var result;
+    result = togpx(geojsonPoint, {
+      transform: {
+        rte: function (rte, feature, coords) {
+          rte.extensions = [{
+            coordsNumber: coords.length
+          }];
+        }
+      },
+      "gpx.rte": true,
+    });
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    var rte = result.getElementsByTagName("rte")[0];
+    var ext = rte.getElementsByTagName("extensions")[0];
+    expect(ext.getElementsByTagName("coordsNumber")[0].textContent).to.eql(2);
+  });
+
+  it('trk', function() {
+    var result;
+    result = togpx(geojsonPoint, {
+      transform: {
+        trk: function (trk, feature, coordsList) {
+          trk.extensions = [{
+            segments: coordsList.length,
+            coordsNumber: coordsList.reduce(function(memo,coords){ return memo + coords.length; }, 0),
+          }];
+        }
+      },
+    });
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    var trk = result.getElementsByTagName("trk")[0];
+    var ext = trk.getElementsByTagName("extensions")[0];
+    expect(ext.getElementsByTagName("segments")[0].textContent).to.eql(2);
+    expect(ext.getElementsByTagName("coordsNumber")[0].textContent).to.eql(4);
+  });
+
+  it('gpx', function() {
+    var result;
+    result = togpx(geojsonPoint, {
+      transform: {
+        gpx: function(gpx, features) {
+          gpx.extensions = [{
+            features: features.length
+          }];
+          gpx.rte = []; // remove routes
+          gpx.trk = []; // remove tracks
+          gpx.wpt = []; // remove waypoints
+        }
+      }
+    });
+    result = (new DOMParser()).parseFromString(result, 'text/xml');
+    var ext = result.getElementsByTagName("extensions")[0];
+    expect(ext.getElementsByTagName("features")[0].textContent).to.eql(1);
+    expect(result.getElementsByTagName("wpt")).to.have.length(0);
+    expect(result.getElementsByTagName("trk")).to.have.length(0);
+    expect(result.getElementsByTagName("rte")).to.have.length(0);
   });
 
 });
