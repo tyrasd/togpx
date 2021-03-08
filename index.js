@@ -94,12 +94,12 @@ function togpx( geojson, options ) {
   }
   // route point
   function mkRtept(feature, coord, index) {
-    var rtept = assign( mkEntity(feature), mkPoint(feature, coord, index) );
+    var rtept = mkPoint(feature, coord, index);
     return options.transform.rtept && options.transform.rtept(rtept, feature, coord, index) || rtept;
   }
   // track point
   function mkTrkpt(feature, coord, index) {
-    var trkpt = assign( mkEntity(feature), mkPoint(feature, coord, index) );
+    var trkpt = mkPoint(feature, coord, index);
     return options.transform.trkpt && options.transform.trkpt(trkpt, feature, coord, index) || trkpt;
   }
   // route
