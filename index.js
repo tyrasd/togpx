@@ -1,9 +1,10 @@
-var JXON = require("jxon");
+"use strict";
+const JXON = require("jxon");
 JXON.config({attrPrefix: '@'});
 
 function togpx( geojson, options ) {
   options = (function (defaults, options) {
-    for (var k in defaults) {
+    for (const k in defaults) {
       if (options.hasOwnProperty(k))
         defaults[k] = options[k];
     }
@@ -19,7 +20,7 @@ function togpx( geojson, options ) {
 
   // is featureCoordTimes is a string -> look for the specified property
   if (typeof options.featureCoordTimes === 'string') {
-    var customTimesFieldKey = options.featureCoordTimes;
+    const customTimesFieldKey = options.featureCoordTimes;
     options.featureCoordTimes = function (feature) {
       return feature.properties[customTimesFieldKey];
     }
@@ -32,7 +33,7 @@ function togpx( geojson, options ) {
     // `name`, `ref`, `id`
     if (!props) return "";
     if (typeof props.tags === "object") {
-      var tags_title = get_feature_title(props.tags);
+      const tags_title = get_feature_title(props.tags);
       if (tags_title !== "")
         return tags_title;
     }
@@ -51,13 +52,13 @@ function togpx( geojson, options ) {
     if (!props) return "";
     if (typeof props.tags === "object")
       return get_feature_description(props.tags);
-    var res = "";
-    for (var k in props) {
+    let res = "";
+    for (const k in props) {
       if (typeof props[k] === "object")
         continue;
       res += k+"="+props[k]+"\n";
     }
-    return res.substr(0,res.length-1);
+    return res.substring(0,res.length-1);
   }
   function get_feature_coord_times(feature) {
     if (!feature.properties) return null;
@@ -68,7 +69,7 @@ function togpx( geojson, options ) {
       o.link = { "@href": options.featureLink(f.properties) }
   }
   // make gpx object
-  var gpx = {"gpx": {
+  const gpx = {"gpx": {
     "@xmlns":"http://www.topografix.com/GPX/1/1",
     "@xmlns:xsi":"http://www.w3.org/2001/XMLSchema-instance",
     "@xsi:schemaLocation":"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd",
@@ -84,7 +85,7 @@ function togpx( geojson, options ) {
   else
     delete options.metadata;
 
-  var features;
+  let features;
   if (geojson.type === "FeatureCollection")
     features = geojson.features;
   else if (geojson.type === "Feature")
@@ -92,14 +93,15 @@ function togpx( geojson, options ) {
   else
     features = [{type:"Feature", properties: {}, geometry: geojson}];
   features.forEach(function mapFeature(f) {
+    let coords, times, o;
     switch (f.geometry.type) {
     // POIs
     case "Point":
     case "MultiPoint":
-      var coords = f.geometry.coordinates;
+      coords = f.geometry.coordinates;
       if (f.geometry.type == "Point") coords = [coords];
       coords.forEach(function (coordinates) {
-        o = {
+        let o = {
           "@lat": coordinates[1],
           "@lon": coordinates[0],
           "name": options.featureTitle(f.properties),
@@ -115,8 +117,8 @@ function togpx( geojson, options ) {
     // LineStrings
     case "LineString":
     case "MultiLineString":
-      var coords = f.geometry.coordinates;
-      var times = options.featureCoordTimes(f);
+      coords = f.geometry.coordinates;
+      times = options.featureCoordTimes(f);
       if (f.geometry.type == "LineString") coords = [coords];
       o = {
         "name": options.featureTitle(f.properties),
@@ -125,9 +127,9 @@ function togpx( geojson, options ) {
       add_feature_link(o,f);
       o.trkseg = [];
       coords.forEach(function(coordinates) {
-        var seg = {trkpt: []};
+        const seg = {trkpt: []};
         coordinates.forEach(function(c, i) {
-          var o = {
+          const o = {
             "@lat": c[1],
             "@lon":c[0]
           };
@@ -152,15 +154,15 @@ function togpx( geojson, options ) {
       };
       add_feature_link(o,f);
       o.trkseg = [];
-      var coords = f.geometry.coordinates;
-      var times = options.featureCoordTimes(f);
+      coords = f.geometry.coordinates;
+      times = options.featureCoordTimes(f);
       if (f.geometry.type == "Polygon") coords = [coords];
       coords.forEach(function(poly) {
         poly.forEach(function(ring) {
-          var seg = {trkpt: []};
-          var i = 0;
+          const seg = {trkpt: []};
+          let i = 0;
           ring.forEach(function(c) {
-            var o = {
+            const o = {
               "@lat": c[1],
               "@lon":c[0]
             };
@@ -180,7 +182,7 @@ function togpx( geojson, options ) {
       break;
     case "GeometryCollection":
       f.geometry.geometries.forEach(function (geometry) {
-        var pseudo_feature = {
+        const pseudo_feature = {
           "properties": f.properties,
           "geometry": geometry
         };
@@ -191,8 +193,7 @@ function togpx( geojson, options ) {
       console.log("warning: unsupported geometry type: "+f.geometry.type);
     }
   });
-  gpx_str = JXON.stringify(gpx);
-  return gpx_str;
+  return JXON.stringify(gpx);
 };
 
 module.exports = togpx;
